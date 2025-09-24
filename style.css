@@ -202,11 +202,8 @@ h3 {
 
 @media (max-width: 970px) {
     #header-div h2 {
-        margin: 0 8vw;
         font-size: 3vw;
-    }
-    #header-div h1 {
-        bottom: 8vw;
+        margin: 0 8vw 5%;
     }
 
     .button-div {
