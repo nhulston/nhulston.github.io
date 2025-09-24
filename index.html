@@ -55,9 +55,6 @@ The Lodge at Park City Mountain Resort"/>
     <meta name="twitter:image:alt" content="Ski in Ski Out Park City
 The Lodge at Park City Mountain Resort"/>
     <meta name="theme-color" content="#FFD703"/>
-    <meta http-equiv='cache-control' content='no-cache'>
-    <meta http-equiv='expires' content='0'>
-    <meta http-equiv='pragma' content='no-cache'>
 </head>
 <body>
 <noscript>
@@ -144,6 +141,16 @@ The Lodge at Park City Mountain Resort"/>
         </div>
     </div>
 </div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('sw.js').catch(function (error) {
+                console.log('Service worker registration failed:', error);
+            });
+        });
+    }
+</script>
 
 </body>
 </html>
