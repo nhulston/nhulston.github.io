@@ -56,6 +56,13 @@ The Lodge at Park City Mountain Resort"/>
 The Lodge at Park City Mountain Resort"/>
     <meta name="theme-color" content="#FFD703"/>
     <link rel="preload" as="image" href="images/park-city-ski-resort.webp" fetchpriority="high"/>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(function (error) {
+                console.log('Service worker registration failed:', error);
+            });
+        }
+    </script>
 </head>
 <body>
 <noscript>
@@ -146,16 +153,6 @@ The Lodge at Park City Mountain Resort"/>
         </div>
     </div>
 </div>
-
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-            navigator.serviceWorker.register('sw.js').catch(function (error) {
-                console.log('Service worker registration failed:', error);
-            });
-        });
-    }
-</script>
 
 </body>
 </html>

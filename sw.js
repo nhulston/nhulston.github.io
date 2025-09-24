@@ -1,5 +1,5 @@
 // Increment CACHE_VERSION when precache list changes to refresh stored assets.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `site-cache-${CACHE_VERSION}`;
 const LONG_CACHE_VALUE = 'public, max-age=31536000, immutable';
 const PRECACHE_URLS = [
