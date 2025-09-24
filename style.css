@@ -20,6 +20,10 @@ body {
     margin: 0;
 }
 
+p {
+    font-size: larger;
+}
+
 #header-div {
     position: relative;
     padding: 0;
