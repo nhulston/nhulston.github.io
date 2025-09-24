@@ -26,7 +26,7 @@ body {
     font-size: 0;
 }
 
-#header-div h2 {
+#header-div .headline-top {
     text-align: center;
     position: absolute;
     top: 3vw;
@@ -44,10 +44,10 @@ body {
     margin: 0;
 }
 
-#header-div h1 {
+#header-div .headline-bottom {
     text-align: center;
     position: absolute;
-    bottom: 5vw;
+    bottom: 7vw;
     left: 0;
     right: 0;
     font-size: 4.5vw;
@@ -165,6 +165,7 @@ h3 {
 
 #footer {
     background-color: #EFEFEE;
+    color: #2b2b2b;
 }
 
 #footer p {
@@ -173,7 +174,14 @@ h3 {
 }
 
 #footer a {
-    color: #E4C537;
+    color: #154273;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+#footer a:focus,
+#footer a:hover {
+    color: #0f2f52;
 }
 
 #column_image {
