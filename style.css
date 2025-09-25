@@ -54,11 +54,13 @@ p {
 }
 
 #header-div a {
-    background-color: #E4C537;
+    background-color: #154273;
     border: none;
     padding: 1.2vw 2.5vw;
     font-size: 2vw;
     font-weight: bold;
+    color: #ffffff;
+    border-radius: 8px;
 }
 
 .row {
@@ -80,7 +82,7 @@ p {
 }
 
 h2 {
-    color: #AD9300;
+    color: #154273;
     font-size: 2.4vw;
     margin-bottom: 20px;
 }
@@ -113,12 +115,13 @@ h2 {
 }
 
 #text-wrapper a {
-    background-color: #E4C537;
+    background-color: #154273;
     border: none;
     padding: 1vw 2vw;
     font-size: 1.5vw;
     font-weight: bold;
-    color: black;
+    color: #ffffff;
+    border-radius: 8px;
 }
 
 #display-header {
@@ -141,12 +144,13 @@ h3 {
 .redirect {
     display: inline-block;
     text-align: center;
-    background-color: #E4C537;
-    color: black;
+    background-color: #154273;
+    color: #ffffff;
     padding: 1.5vw 3vw;
     /*text-decoration: underline;*/
     font-size: 1.3vw;
     margin-bottom: 6vw;
+    border-radius: 8px;
 }
 
 #facebook {
@@ -216,7 +220,7 @@ h3 {
     }
 
     h2 {
-        color: #AD9300;
+        color: #154273;
         font-size: 2.4vw;
         margin-bottom: 20px;
     }
@@ -259,6 +263,8 @@ h3 {
 
     #text-wrapper a {
         font-size: 2.2vw;
-        padding: 1.2vw 2.5vw;;
+        padding: 1.2vw 2.5vw;
+        color: #ffffff;
+        border-radius: 8px;
     }
 }
