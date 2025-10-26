@@ -1,11 +1,15 @@
 // Increment CACHE_VERSION when precache list changes to refresh stored assets.
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `site-cache-${CACHE_VERSION}`;
 const LONG_CACHE_VALUE = 'public, max-age=31536000, immutable';
 const PRECACHE_URLS = [
     '/',
     '/index.html',
     '/style.css',
+    '/navbar.js',
+    '/faq.html',
+    '/blog.html',
+    '/blogs/where-to-stay-in-park-city.html',
     '/404.html',
     '/images/park-city-ski-resort.webp',
     '/images/park-city-map.webp',
