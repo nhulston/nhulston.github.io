@@ -153,6 +153,28 @@ h3 {
     border-radius: 8px;
 }
 
+#concierge-section {
+    padding: 20px 15%;
+    margin: 0 auto 50px;
+}
+
+#concierge-section p {
+    color: #5E5F5F;
+    font-size: 1.3vw;
+    line-height: 1.8;
+    margin: 0;
+}
+
+#concierge-section a {
+    color: #154273;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+#concierge-section a:hover {
+    color: #0f2f52;
+}
+
 #facebook {
     width: 5%;
     pointer-events: all;
@@ -266,5 +288,15 @@ h3 {
         padding: 1.2vw 2.5vw;
         color: #ffffff;
         border-radius: 8px;
+    }
+
+    #concierge-section {
+        padding: 30px 10%;
+        margin: 40px auto;
+    }
+
+    #concierge-section p {
+        font-size: 2.8vw;
+        line-height: 1.6;
     }
 }
