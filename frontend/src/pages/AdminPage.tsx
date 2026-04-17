@@ -9,19 +9,10 @@ import type {
   BlogPostPayload,
   FAQFormData,
   FAQItem,
-  FAQSection,
   LoadStatus,
 } from "../types";
 
 const DEFAULT_BLOG_AUTHOR = "Randy Kirsch";
-const FAQ_SECTIONS: FAQSection[] = [
-  "Parking and Transportation",
-  "Check-In and Check-Out",
-  "Luggage Storage",
-  "Extending Your Stay",
-  "Condo Policies",
-  "Amenities & Services",
-];
 
 function padDatePart(value: number): string {
   return value.toString().padStart(2, "0");
@@ -64,21 +55,52 @@ function createEmptyBlogForm(): BlogPostFormData {
 
 function createEmptyFaqForm(): FAQFormData {
   return {
-    section: FAQ_SECTIONS[0],
+    section: "",
     question: "",
     answer_markdown: "",
     published: true,
   };
 }
 
-function groupFaqsBySection(items: FAQItem[]): Array<{ section: FAQSection; items: FAQItem[] }> {
-  return FAQ_SECTIONS.map((section) => ({
+function getSectionOptions(items: FAQItem[]): string[] {
+  const sections = new Set<string>();
+
+  items
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .forEach((item) => {
+      const section = item.section.trim();
+      if (section) {
+        sections.add(section);
+      }
+    });
+
+  return Array.from(sections);
+}
+
+function groupFaqsBySection(items: FAQItem[]): Array<{ section: string; items: FAQItem[] }> {
+  const groups = new Map<string, FAQItem[]>();
+
+  items
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .forEach((item) => {
+      const section = item.section.trim();
+      const existing = groups.get(section);
+      if (existing) {
+        existing.push(item);
+      } else {
+        groups.set(section, [item]);
+      }
+    });
+
+  return Array.from(groups, ([section, sectionItems]) => ({
     section,
-    items: items.filter((item) => item.section === section).sort((a, b) => a.sort_order - b.sort_order),
+    items: sectionItems,
   }));
 }
 
-function flattenFaqGroups(groups: Array<{ section: FAQSection; items: FAQItem[] }>): FAQItem[] {
+function flattenFaqGroups(groups: Array<{ section: string; items: FAQItem[] }>): FAQItem[] {
   return groups.flatMap((group) => group.items).map((item, index) => ({
     ...item,
     sort_order: index,
@@ -88,7 +110,7 @@ function flattenFaqGroups(groups: Array<{ section: FAQSection; items: FAQItem[] 
 function reorderFaqList(
   items: FAQItem[],
   sourceId: number,
-  targetSection: FAQSection,
+  targetSection: string,
   targetId?: number,
 ): FAQItem[] | null {
   const sourceItem = items.find((item) => item.id === sourceId);
@@ -213,7 +235,14 @@ export function AdminPage() {
   }
 
   function openNewFaqEditor(): void {
-    resetFaqEditor();
+    const firstSection = getSectionOptions(faqs)[0] ?? "";
+    setEditingFaqId(null);
+    setFaqForm({
+      section: firstSection,
+      question: "",
+      answer_markdown: "",
+      published: true,
+    });
     setIsFaqDialogOpen(true);
   }
 
@@ -264,12 +293,17 @@ export function AdminPage() {
     setNotice("");
     setError("");
 
+    const payload: FAQFormData = {
+      ...faqForm,
+      section: faqForm.section.trim(),
+    };
+
     try {
       if (editingFaqId) {
-        await api.updateFaq(editingFaqId, faqForm);
+        await api.updateFaq(editingFaqId, payload);
         setNotice("FAQ updated.");
       } else {
-        await api.createFaq(faqForm);
+        await api.createFaq(payload);
         setNotice("FAQ created.");
       }
       closeFaqEditor();
@@ -338,7 +372,7 @@ export function AdminPage() {
     setDropTargetFaqId(null);
   }
 
-  async function handleFaqDrop(targetSection: FAQSection, targetFaqId?: number): Promise<void> {
+  async function handleFaqDrop(targetSection: string, targetFaqId?: number): Promise<void> {
     if (draggedFaqId === null || isReorderingFaqs) {
       return;
     }
@@ -374,6 +408,8 @@ export function AdminPage() {
       setIsReorderingFaqs(false);
     }
   }
+
+  const sectionOptions = getSectionOptions(faqs);
 
   return (
     <div className="admin-shell">
@@ -417,10 +453,12 @@ export function AdminPage() {
             {faqs.length > 0
               ? groupFaqsBySection(faqs).map(({ section, items }) => (
                   <section className="admin-faq-section" key={section}>
-                    <div className="admin-faq-section-header">
-                      <h3>{section}</h3>
-                      <span className="admin-faq-section-count">{items.length}</span>
-                    </div>
+                    {section ? (
+                      <div className="admin-faq-section-header">
+                        <h3>{section}</h3>
+                        <span className="admin-faq-section-count">{items.length}</span>
+                      </div>
+                    ) : null}
                     <div
                       className={`admin-faq-section-list${items.length === 0 ? " empty" : ""}`}
                       onDragOver={(event) => {
@@ -567,21 +605,24 @@ export function AdminPage() {
               </div>
               <label>
                 Section
-                <select
+                <input
+                  list="faq-section-options"
                   onChange={(event) =>
                     setFaqForm((current) => ({
                       ...current,
-                      section: event.target.value as FAQSection,
+                      section: event.target.value,
                     }))
                   }
+                  placeholder="Section name"
+                  required
+                  type="text"
                   value={faqForm.section}
-                >
-                  {FAQ_SECTIONS.map((section) => (
-                    <option key={section} value={section}>
-                      {section}
-                    </option>
+                />
+                <datalist id="faq-section-options">
+                  {sectionOptions.map((section) => (
+                    <option key={section} value={section} />
                   ))}
-                </select>
+                </datalist>
               </label>
               <label>
                 Question

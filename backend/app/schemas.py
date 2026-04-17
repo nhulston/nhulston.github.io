@@ -1,17 +1,6 @@
 from datetime import datetime
-from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-
-
-FAQSection = Literal[
-    "Parking and Transportation",
-    "Check-In and Check-Out",
-    "Luggage Storage",
-    "Extending Your Stay",
-    "Condo Policies",
-    "Amenities & Services",
-]
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class BlogPostBase(BaseModel):
@@ -41,10 +30,18 @@ class BlogPostRead(BlogPostBase):
 
 
 class FAQItemBase(BaseModel):
-    section: FAQSection
+    section: str = Field(min_length=1, max_length=120)
     question: str = Field(min_length=1, max_length=255)
     answer_markdown: str = Field(min_length=1)
     published: bool = True
+
+    @field_validator("section")
+    @classmethod
+    def normalize_section(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Section is required.")
+        return normalized
 
 
 class FAQItemCreate(FAQItemBase):
@@ -57,7 +54,15 @@ class FAQItemUpdate(FAQItemBase):
 
 class FAQOrderEntry(BaseModel):
     id: int
-    section: FAQSection
+    section: str = Field(min_length=1, max_length=120)
+
+    @field_validator("section")
+    @classmethod
+    def normalize_section(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Section is required.")
+        return normalized
 
 
 class FAQOrderUpdate(BaseModel):

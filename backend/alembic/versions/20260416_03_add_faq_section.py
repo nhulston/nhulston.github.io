@@ -24,23 +24,10 @@ def upgrade() -> None:
             "section",
             sa.String(length=120),
             nullable=False,
-            server_default="Parking and Transportation",
+            server_default="",
         ),
     )
-
-    op.execute(
-        """
-        UPDATE faq_items
-        SET section = CASE
-            WHEN sort_order BETWEEN 0 AND 5 THEN 'Parking and Transportation'
-            WHEN sort_order BETWEEN 6 AND 8 THEN 'Check-In and Check-Out'
-            WHEN sort_order = 9 THEN 'Luggage Storage'
-            WHEN sort_order = 10 THEN 'Extending Your Stay'
-            WHEN sort_order BETWEEN 11 AND 14 THEN 'Condo Policies'
-            ELSE 'Amenities & Services'
-        END
-        """
-    )
+    op.alter_column("faq_items", "section", existing_type=sa.String(length=120), server_default=None)
 
 
 def downgrade() -> None:

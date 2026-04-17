@@ -1,13 +1,5 @@
 export type LoadStatus = "loading" | "ready" | "error";
 
-export type FAQSection =
-  | "Parking and Transportation"
-  | "Check-In and Check-Out"
-  | "Luggage Storage"
-  | "Extending Your Stay"
-  | "Condo Policies"
-  | "Amenities & Services";
-
 export interface BlogPost {
   id: number;
   title: string;
@@ -23,7 +15,7 @@ export interface BlogPost {
 
 export interface FAQItem {
   id: number;
-  section: FAQSection;
+  section: string;
   question: string;
   answer_markdown: string;
   sort_order: number;
@@ -48,7 +40,7 @@ export interface BlogPostPayload extends Omit<BlogPostFormData, "slug" | "publis
 }
 
 export interface FAQFormData {
-  section: FAQSection;
+  section: string;
   question: string;
   answer_markdown: string;
   published: boolean;
@@ -56,5 +48,5 @@ export interface FAQFormData {
 
 export interface FAQOrderItem {
   id: number;
-  section: FAQSection;
+  section: string;
 }
