@@ -8,7 +8,7 @@ export interface BlogPost {
   slug: string;
   body_markdown: string;
   published: boolean;
-  published_at: string | null;
+  published_at: string;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +35,7 @@ export interface BlogPostFormData {
 
 export interface BlogPostPayload extends Omit<BlogPostFormData, "slug" | "published_at"> {
   slug: string | null;
-  published_at: string | null;
+  published_at: string;
 }
 
 export interface FAQFormData {

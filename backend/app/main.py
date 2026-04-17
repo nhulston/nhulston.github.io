@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from sqlalchemy import func, select
@@ -74,7 +74,7 @@ def list_public_blog_posts(db: Session = Depends(get_db)) -> list[BlogPost]:
     statement = (
         select(BlogPost)
         .where(BlogPost.published.is_(True))
-        .order_by(func.coalesce(BlogPost.published_at, BlogPost.created_at).desc())
+        .order_by(BlogPost.published_at.desc(), BlogPost.created_at.desc())
     )
     return list(db.scalars(statement))
 

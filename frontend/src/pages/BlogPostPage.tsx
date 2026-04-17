@@ -76,9 +76,7 @@ export function BlogPostPage() {
       {status === "ready" && post ? (
         <article className="blog-post">
           <h1 className="page-title">{post.title}</h1>
-          <p className="blog-date">
-            {formatByline(post.published_at || post.created_at, post.author)}
-          </p>
+          <p className="blog-date">{formatByline(post.published_at, post.author)}</p>
 
           <div className="blog-content">
             {post.summary ? <p>{post.summary}</p> : null}

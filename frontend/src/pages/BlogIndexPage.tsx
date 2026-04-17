@@ -75,9 +75,7 @@ export function BlogIndexPage() {
             <h2 className="blog-title">
               <Link to={`/blog/${post.slug}`}>{post.title}</Link>
             </h2>
-            <p className="blog-date">
-              {formatByline(post.published_at || post.created_at, post.author)}
-            </p>
+            <p className="blog-date">{formatByline(post.published_at, post.author)}</p>
             <p className="blog-excerpt">{post.summary}</p>
             <Link className="read-more" to={`/blog/${post.slug}`}>
               Read More -&gt;

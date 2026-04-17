@@ -155,7 +155,7 @@ export function AdminPage() {
       slug: post.slug,
       body_markdown: post.body_markdown,
       published: post.published,
-      published_at: getUtcDateInputValue(post.published_at || post.created_at),
+      published_at: getUtcDateInputValue(post.published_at),
     });
     setIsBlogDialogOpen(true);
   }
@@ -427,7 +427,7 @@ export function AdminPage() {
                   <div>
                     <h3>{post.title}</h3>
                     <p className="admin-item-meta">
-                      {formatPublishedDate(post.published_at || post.created_at)}
+                      {formatPublishedDate(post.published_at)}
                       {post.author ? ` • ${post.author}` : ""}
                       {` • /${post.slug}`}
                     </p>
