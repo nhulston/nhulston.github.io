@@ -79,7 +79,6 @@ export function BlogPostPage() {
           <p className="blog-date">{formatByline(post.published_at, post.author)}</p>
 
           <div className="blog-content">
-            {post.summary ? <p>{post.summary}</p> : null}
             <ReactMarkdown>{post.body_markdown}</ReactMarkdown>
           </div>
 
