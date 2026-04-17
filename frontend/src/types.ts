@@ -30,10 +30,12 @@ export interface BlogPostFormData {
   slug: string;
   body_markdown: string;
   published: boolean;
+  published_at: string;
 }
 
-export interface BlogPostPayload extends Omit<BlogPostFormData, "slug"> {
+export interface BlogPostPayload extends Omit<BlogPostFormData, "slug" | "published_at"> {
   slug: string | null;
+  published_at: string | null;
 }
 
 export interface FAQFormData {

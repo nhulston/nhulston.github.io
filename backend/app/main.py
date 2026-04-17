@@ -48,10 +48,10 @@ def set_blog_fields(post: BlogPost, payload: BlogPostCreate | BlogPostUpdate, db
     post.body_markdown = payload.body_markdown
     post.published = payload.published
 
-    if payload.published and post.published_at is None:
-        post.published_at = datetime.now(timezone.utc)
-    if not payload.published:
-        post.published_at = None
+    if payload.published_at.tzinfo is None:
+        post.published_at = payload.published_at.replace(tzinfo=timezone.utc)
+    else:
+        post.published_at = payload.published_at.astimezone(timezone.utc)
 
 
 @app.get("/api/health")

@@ -10,6 +10,7 @@ class BlogPostBase(BaseModel):
     slug: str | None = Field(default=None, max_length=180)
     body_markdown: str = Field(min_length=1)
     published: bool = True
+    published_at: datetime
 
 
 class BlogPostCreate(BlogPostBase):
@@ -22,7 +23,6 @@ class BlogPostUpdate(BlogPostBase):
 
 class BlogPostRead(BlogPostBase):
     id: int
-    published_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

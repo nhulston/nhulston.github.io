@@ -14,6 +14,33 @@ import type {
 
 const DEFAULT_BLOG_AUTHOR = "Randy Kirsch";
 
+function padDatePart(value: number): string {
+  return value.toString().padStart(2, "0");
+}
+
+function getTodayDateInputValue(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(now.getDate())}`;
+}
+
+function getUtcDateInputValue(value: string): string {
+  const date = new Date(value);
+  return `${date.getUTCFullYear()}-${padDatePart(date.getUTCMonth() + 1)}-${padDatePart(date.getUTCDate())}`;
+}
+
+function getPublishedAtPayload(value: string): string {
+  return `${value}T00:00:00Z`;
+}
+
+function formatPublishedDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 function createEmptyBlogForm(): BlogPostFormData {
   return {
     title: "",
@@ -22,6 +49,7 @@ function createEmptyBlogForm(): BlogPostFormData {
     slug: "",
     body_markdown: "",
     published: true,
+    published_at: getTodayDateInputValue(),
   };
 }
 
@@ -85,7 +113,12 @@ export function AdminPage() {
   }
 
   useEffect(() => {
+    document.body.classList.add("admin-site");
     void loadAll();
+
+    return () => {
+      document.body.classList.remove("admin-site");
+    };
   }, []);
 
   function resetBlogEditor(): void {
@@ -122,6 +155,7 @@ export function AdminPage() {
       slug: post.slug,
       body_markdown: post.body_markdown,
       published: post.published,
+      published_at: getUtcDateInputValue(post.published_at || post.created_at),
     });
     setIsBlogDialogOpen(true);
   }
@@ -153,6 +187,7 @@ export function AdminPage() {
     const payload: BlogPostPayload = {
       ...blogForm,
       author: blogForm.author.trim(),
+      published_at: getPublishedAtPayload(blogForm.published_at),
       slug: blogForm.slug.trim() || null,
     };
 
@@ -312,7 +347,7 @@ export function AdminPage() {
       </div>
 
       <div className="admin-sections">
-        <section className="admin-panel admin-section">
+        <section className="admin-panel admin-panel-faq admin-section">
           <div className="panel-heading">
             <h2>FAQs</h2>
             <button className="button button-ghost" onClick={openNewFaqEditor} type="button">
@@ -377,7 +412,7 @@ export function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-panel admin-section">
+        <section className="admin-panel admin-panel-blog admin-section">
           <div className="panel-heading">
             <h2>Blog Posts</h2>
             <button className="button button-ghost" onClick={openNewBlogEditor} type="button">
@@ -392,7 +427,9 @@ export function AdminPage() {
                   <div>
                     <h3>{post.title}</h3>
                     <p className="admin-item-meta">
-                      {post.author ? `${post.author} • /${post.slug}` : `/${post.slug}`}
+                      {formatPublishedDate(post.published_at || post.created_at)}
+                      {post.author ? ` • ${post.author}` : ""}
+                      {` • /${post.slug}`}
                     </p>
                   </div>
                   <span className={`pill${post.published ? " live" : ""}`}>
@@ -534,6 +571,20 @@ export function AdminPage() {
                   }
                   type="text"
                   value={blogForm.author}
+                />
+              </label>
+              <label>
+                Published date
+                <input
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      published_at: event.target.value,
+                    }))
+                  }
+                  required
+                  type="date"
+                  value={blogForm.published_at}
                 />
               </label>
               <label>

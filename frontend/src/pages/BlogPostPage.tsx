@@ -10,6 +10,7 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "long",
+    timeZone: "UTC",
     year: "numeric",
   }).format(new Date(value));
 }
