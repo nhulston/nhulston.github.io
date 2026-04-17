@@ -113,10 +113,12 @@ export function AdminPage() {
   }
 
   useEffect(() => {
+    document.documentElement.classList.add("admin-site");
     document.body.classList.add("admin-site");
     void loadAll();
 
     return () => {
+      document.documentElement.classList.remove("admin-site");
       document.body.classList.remove("admin-site");
     };
   }, []);
