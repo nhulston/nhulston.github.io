@@ -1,4 +1,4 @@
-import type { DragEvent, FormEvent } from "react";
+import type { DragEvent, FormEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
@@ -58,6 +58,8 @@ export function AdminPage() {
   const [faqForm, setFaqForm] = useState<FAQFormData>(createEmptyFaqForm);
   const [editingBlogId, setEditingBlogId] = useState<number | null>(null);
   const [editingFaqId, setEditingFaqId] = useState<number | null>(null);
+  const [isBlogDialogOpen, setIsBlogDialogOpen] = useState(false);
+  const [isFaqDialogOpen, setIsFaqDialogOpen] = useState(false);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -83,7 +85,7 @@ export function AdminPage() {
   }
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, []);
 
   function resetBlogEditor(): void {
@@ -94,6 +96,53 @@ export function AdminPage() {
   function resetFaqEditor(): void {
     setEditingFaqId(null);
     setFaqForm(createEmptyFaqForm());
+  }
+
+  function closeBlogEditor(): void {
+    setIsBlogDialogOpen(false);
+    resetBlogEditor();
+  }
+
+  function closeFaqEditor(): void {
+    setIsFaqDialogOpen(false);
+    resetFaqEditor();
+  }
+
+  function openNewBlogEditor(): void {
+    resetBlogEditor();
+    setIsBlogDialogOpen(true);
+  }
+
+  function openEditBlogEditor(post: BlogPost): void {
+    setEditingBlogId(post.id);
+    setBlogForm({
+      title: post.title,
+      author: post.author,
+      summary: post.summary,
+      slug: post.slug,
+      body_markdown: post.body_markdown,
+      published: post.published,
+    });
+    setIsBlogDialogOpen(true);
+  }
+
+  function openNewFaqEditor(): void {
+    resetFaqEditor();
+    setIsFaqDialogOpen(true);
+  }
+
+  function openEditFaqEditor(faq: FAQItem): void {
+    setEditingFaqId(faq.id);
+    setFaqForm({
+      question: faq.question,
+      answer_markdown: faq.answer_markdown,
+      published: faq.published,
+    });
+    setIsFaqDialogOpen(true);
+  }
+
+  function handleDialogClick(event: MouseEvent<HTMLDivElement>): void {
+    event.stopPropagation();
   }
 
   async function handleBlogSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -115,7 +164,7 @@ export function AdminPage() {
         await api.createBlogPost(payload);
         setNotice("Blog post created.");
       }
-      resetBlogEditor();
+      closeBlogEditor();
       await loadAll();
     } catch (requestError: unknown) {
       setError(getErrorMessage(requestError));
@@ -135,7 +184,7 @@ export function AdminPage() {
         await api.createFaq(faqForm);
         setNotice("FAQ created.");
       }
-      resetFaqEditor();
+      closeFaqEditor();
       await loadAll();
     } catch (requestError: unknown) {
       setError(getErrorMessage(requestError));
@@ -150,7 +199,7 @@ export function AdminPage() {
       await api.deleteBlogPost(id);
       setNotice("Blog post deleted.");
       if (editingBlogId === id) {
-        resetBlogEditor();
+        closeBlogEditor();
       }
       await loadAll();
     } catch (requestError: unknown) {
@@ -166,7 +215,7 @@ export function AdminPage() {
       await api.deleteFaq(id);
       setNotice("FAQ deleted.");
       if (editingFaqId === id) {
-        resetFaqEditor();
+        closeFaqEditor();
       }
       await loadAll();
     } catch (requestError: unknown) {
@@ -237,8 +286,7 @@ export function AdminPage() {
     <div className="admin-shell">
       <header className="admin-header admin-hero">
         <div className="admin-hero-copy">
-          <p className="eyebrow">Admin</p>
-          <h1>FAQs and Blog Posts</h1>
+          <h1>Admin</h1>
         </div>
         <div className="admin-hero-actions">
           <div className="admin-stat-row">
@@ -266,11 +314,8 @@ export function AdminPage() {
       <div className="admin-sections">
         <section className="admin-panel admin-section">
           <div className="panel-heading">
-            <div>
-              <p className="eyebrow">FAQ</p>
-              <h2>FAQs</h2>
-            </div>
-            <button className="button button-ghost" onClick={resetFaqEditor} type="button">
+            <h2>FAQs</h2>
+            <button className="button button-ghost" onClick={openNewFaqEditor} type="button">
               New FAQ
             </button>
           </div>
@@ -291,7 +336,7 @@ export function AdminPage() {
                 <div className="admin-item-top">
                   <div className="admin-item-heading">
                     <button
-                      aria-label={`Drag to reorder ${faq.question}`}
+                      aria-label={`Reorder ${faq.question}`}
                       className="faq-drag-handle"
                       disabled={isReorderingFaqs}
                       draggable={!isReorderingFaqs}
@@ -299,7 +344,7 @@ export function AdminPage() {
                       onDragStart={(event) => handleFaqDragStart(event, faq.id)}
                       type="button"
                     >
-                      Drag
+                      Reorder
                     </button>
                     <div>
                       <h3>{faq.question}</h3>
@@ -313,14 +358,7 @@ export function AdminPage() {
                 <div className="row-actions">
                   <button
                     className="button button-ghost"
-                    onClick={() => {
-                      setEditingFaqId(faq.id);
-                      setFaqForm({
-                        question: faq.question,
-                        answer_markdown: faq.answer_markdown,
-                        published: faq.published,
-                      });
-                    }}
+                    onClick={() => openEditFaqEditor(faq)}
                     type="button"
                   >
                     Edit
@@ -337,74 +375,12 @@ export function AdminPage() {
             ))}
             {faqs.length === 0 ? <p className="empty-state">No FAQs yet.</p> : null}
           </div>
-
-          <form className="editor-form admin-editor" onSubmit={handleFaqSubmit}>
-            <div className="admin-editor-heading">
-              <div>
-                <h3>{editingFaqId ? "Edit FAQ" : "Create FAQ"}</h3>
-              </div>
-              {editingFaqId ? (
-                <button className="button button-ghost" onClick={resetFaqEditor} type="button">
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-            <label>
-              Question
-              <input
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    question: event.target.value,
-                  }))
-                }
-                required
-                type="text"
-                value={faqForm.question}
-              />
-            </label>
-            <label>
-              Answer
-              <textarea
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    answer_markdown: event.target.value,
-                  }))
-                }
-                required
-                rows={8}
-                value={faqForm.answer_markdown}
-              />
-            </label>
-            <div className="admin-form-row admin-form-row-single">
-              <label className="checkbox-row">
-                <input
-                  checked={faqForm.published}
-                  onChange={(event) =>
-                    setFaqForm((current) => ({
-                      ...current,
-                      published: event.target.checked,
-                    }))
-                  }
-                  type="checkbox"
-                />
-                Published
-              </label>
-            </div>
-            <button className="button button-primary" type="submit">
-              {editingFaqId ? "Update FAQ" : "Create FAQ"}
-            </button>
-          </form>
         </section>
 
         <section className="admin-panel admin-section">
           <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Blog</p>
-              <h2>Blog Posts</h2>
-            </div>
-            <button className="button button-ghost" onClick={resetBlogEditor} type="button">
+            <h2>Blog Posts</h2>
+            <button className="button button-ghost" onClick={openNewBlogEditor} type="button">
               New post
             </button>
           </div>
@@ -427,17 +403,7 @@ export function AdminPage() {
                 <div className="row-actions">
                   <button
                     className="button button-ghost"
-                    onClick={() => {
-                      setEditingBlogId(post.id);
-                      setBlogForm({
-                        title: post.title,
-                        author: post.author,
-                        summary: post.summary,
-                        slug: post.slug,
-                        body_markdown: post.body_markdown,
-                        published: post.published,
-                      });
-                    }}
+                    onClick={() => openEditBlogEditor(post)}
                     type="button"
                   >
                     Edit
@@ -454,105 +420,188 @@ export function AdminPage() {
             ))}
             {blogPosts.length === 0 ? <p className="empty-state">No blog posts yet.</p> : null}
           </div>
-
-          <form className="editor-form admin-editor" onSubmit={handleBlogSubmit}>
-            <div className="admin-editor-heading">
-              <div>
-                <h3>{editingBlogId ? "Edit post" : "Create post"}</h3>
-              </div>
-              {editingBlogId ? (
-                <button className="button button-ghost" onClick={resetBlogEditor} type="button">
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-            <label>
-              Title
-              <input
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                required
-                type="text"
-                value={blogForm.title}
-              />
-            </label>
-            <label>
-              Author
-              <input
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    author: event.target.value,
-                  }))
-                }
-                type="text"
-                value={blogForm.author}
-              />
-            </label>
-            <label>
-              Summary
-              <textarea
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    summary: event.target.value,
-                  }))
-                }
-                rows={3}
-                value={blogForm.summary}
-              />
-            </label>
-            <label>
-              Slug
-              <input
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    slug: event.target.value,
-                  }))
-                }
-                placeholder="leave blank to auto-generate"
-                type="text"
-                value={blogForm.slug}
-              />
-            </label>
-            <label>
-              Body
-              <textarea
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    body_markdown: event.target.value,
-                  }))
-                }
-                required
-                rows={12}
-                value={blogForm.body_markdown}
-              />
-            </label>
-            <label className="checkbox-row">
-              <input
-                checked={blogForm.published}
-                onChange={(event) =>
-                  setBlogForm((current) => ({
-                    ...current,
-                    published: event.target.checked,
-                  }))
-                }
-                type="checkbox"
-              />
-              Published
-            </label>
-            <button className="button button-primary" type="submit">
-              {editingBlogId ? "Update post" : "Create post"}
-            </button>
-          </form>
         </section>
       </div>
+
+      {isFaqDialogOpen ? (
+        <div className="admin-dialog-backdrop" onClick={closeFaqEditor} role="presentation">
+          <div
+            aria-labelledby="faq-dialog-title"
+            aria-modal="true"
+            className="admin-dialog"
+            onClick={handleDialogClick}
+            role="dialog"
+          >
+            <form className="editor-form admin-editor" onSubmit={handleFaqSubmit}>
+              <div className="admin-dialog-header">
+                <h3 id="faq-dialog-title">{editingFaqId ? "Edit FAQ" : "New FAQ"}</h3>
+                <button className="button button-ghost" onClick={closeFaqEditor} type="button">
+                  Close
+                </button>
+              </div>
+              <label>
+                Question
+                <input
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      question: event.target.value,
+                    }))
+                  }
+                  required
+                  type="text"
+                  value={faqForm.question}
+                />
+              </label>
+              <label>
+                Answer
+                <textarea
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      answer_markdown: event.target.value,
+                    }))
+                  }
+                  required
+                  rows={10}
+                  value={faqForm.answer_markdown}
+                />
+              </label>
+              <label className="checkbox-row">
+                <input
+                  checked={faqForm.published}
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      published: event.target.checked,
+                    }))
+                  }
+                  type="checkbox"
+                />
+                Published
+              </label>
+              <div className="admin-dialog-actions">
+                <button className="button button-ghost" onClick={closeFaqEditor} type="button">
+                  Cancel
+                </button>
+                <button className="button button-primary" type="submit">
+                  {editingFaqId ? "Update FAQ" : "Create FAQ"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {isBlogDialogOpen ? (
+        <div className="admin-dialog-backdrop" onClick={closeBlogEditor} role="presentation">
+          <div
+            aria-labelledby="blog-dialog-title"
+            aria-modal="true"
+            className="admin-dialog admin-dialog-wide"
+            onClick={handleDialogClick}
+            role="dialog"
+          >
+            <form className="editor-form admin-editor" onSubmit={handleBlogSubmit}>
+              <div className="admin-dialog-header">
+                <h3 id="blog-dialog-title">{editingBlogId ? "Edit post" : "New post"}</h3>
+                <button className="button button-ghost" onClick={closeBlogEditor} type="button">
+                  Close
+                </button>
+              </div>
+              <label>
+                Title
+                <input
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  required
+                  type="text"
+                  value={blogForm.title}
+                />
+              </label>
+              <label>
+                Author
+                <input
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      author: event.target.value,
+                    }))
+                  }
+                  type="text"
+                  value={blogForm.author}
+                />
+              </label>
+              <label>
+                Summary
+                <textarea
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      summary: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  value={blogForm.summary}
+                />
+              </label>
+              <label>
+                Slug
+                <input
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      slug: event.target.value,
+                    }))
+                  }
+                  placeholder="leave blank to auto-generate"
+                  type="text"
+                  value={blogForm.slug}
+                />
+              </label>
+              <label>
+                Body
+                <textarea
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      body_markdown: event.target.value,
+                    }))
+                  }
+                  required
+                  rows={14}
+                  value={blogForm.body_markdown}
+                />
+              </label>
+              <label className="checkbox-row">
+                <input
+                  checked={blogForm.published}
+                  onChange={(event) =>
+                    setBlogForm((current) => ({
+                      ...current,
+                      published: event.target.checked,
+                    }))
+                  }
+                  type="checkbox"
+                />
+                Published
+              </label>
+              <div className="admin-dialog-actions">
+                <button className="button button-ghost" onClick={closeBlogEditor} type="button">
+                  Cancel
+                </button>
+                <button className="button button-primary" type="submit">
+                  {editingBlogId ? "Update post" : "Create post"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
