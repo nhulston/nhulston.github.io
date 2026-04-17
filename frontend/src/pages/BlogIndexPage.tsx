@@ -13,6 +13,11 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function formatByline(value: string, author: string): string {
+  const formattedDate = formatDate(value);
+  return author.trim() ? `${formattedDate} • By ${author.trim()}` : formattedDate;
+}
+
 export function BlogIndexPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
@@ -70,7 +75,7 @@ export function BlogIndexPage() {
               <Link to={`/blog/${post.slug}`}>{post.title}</Link>
             </h2>
             <p className="blog-date">
-              {formatDate(post.published_at || post.created_at)} • By The Lodge at Park City
+              {formatByline(post.published_at || post.created_at, post.author)}
             </p>
             <p className="blog-excerpt">{post.summary}</p>
             <Link className="read-more" to={`/blog/${post.slug}`}>

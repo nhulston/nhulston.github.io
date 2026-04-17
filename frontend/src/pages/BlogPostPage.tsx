@@ -14,6 +14,11 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function formatByline(value: string, author: string): string {
+  const formattedDate = formatDate(value);
+  return author.trim() ? `${formattedDate} • By ${author.trim()}` : formattedDate;
+}
+
 export function BlogPostPage() {
   const { slug } = useParams();
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -71,7 +76,7 @@ export function BlogPostPage() {
         <article className="blog-post">
           <h1 className="page-title">{post.title}</h1>
           <p className="blog-date">
-            {formatDate(post.published_at || post.created_at)} • By The Lodge at Park City
+            {formatByline(post.published_at || post.created_at, post.author)}
           </p>
 
           <div className="blog-content">

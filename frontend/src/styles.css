@@ -525,6 +525,13 @@ h3 {
     linear-gradient(180deg, #f8f7f3 0%, #ede7db 100%);
 }
 
+.admin-shell,
+.admin-shell *,
+.admin-shell *::before,
+.admin-shell *::after {
+  box-sizing: border-box;
+}
+
 .admin-header {
   width: min(1040px, 100%);
   margin: 0 auto 1.25rem;
@@ -648,6 +655,11 @@ h3 {
   line-height: 1.04;
 }
 
+.admin-panel h3 {
+  text-align: left;
+  align-self: auto;
+}
+
 .admin-section {
   scroll-margin-top: 100px;
 }
@@ -695,6 +707,41 @@ h3 {
   gap: 1rem;
 }
 
+.admin-item-heading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.admin-item-heading > div {
+  min-width: 0;
+}
+
+.faq-drag-handle {
+  flex: 0 0 auto;
+  min-width: 3.25rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(21, 66, 115, 0.14);
+  background: rgba(255, 255, 255, 0.94);
+  color: #17355d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: grab;
+}
+
+.faq-drag-handle:active {
+  cursor: grabbing;
+}
+
+.faq-drag-handle:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .admin-item-meta {
   margin: 0;
   color: #5f6a6b;
@@ -705,6 +752,15 @@ h3 {
   margin: 0;
   color: #56677c;
   line-height: 1.55;
+}
+
+.admin-list-item.dragging {
+  opacity: 0.6;
+}
+
+.admin-list-item.drop-target {
+  border-color: rgba(21, 66, 115, 0.34);
+  box-shadow: 0 0 0 3px rgba(21, 66, 115, 0.12);
 }
 
 .admin-subtitle,
@@ -804,6 +860,10 @@ h3 {
   grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
   gap: 1rem;
   align-items: end;
+}
+
+.admin-form-row-single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .checkbox-row {

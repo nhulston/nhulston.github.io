@@ -3,6 +3,7 @@ export type LoadStatus = "loading" | "ready" | "error";
 export interface BlogPost {
   id: number;
   title: string;
+  author: string;
   summary: string;
   slug: string;
   body_markdown: string;
@@ -24,6 +25,7 @@ export interface FAQItem {
 
 export interface BlogPostFormData {
   title: string;
+  author: string;
   summary: string;
   slug: string;
   body_markdown: string;
@@ -37,7 +39,5 @@ export interface BlogPostPayload extends Omit<BlogPostFormData, "slug"> {
 export interface FAQFormData {
   question: string;
   answer_markdown: string;
-  sort_order: number;
   published: boolean;
 }
-

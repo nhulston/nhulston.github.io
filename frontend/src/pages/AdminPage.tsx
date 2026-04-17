@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { DragEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
@@ -12,9 +12,12 @@ import type {
   LoadStatus,
 } from "../types";
 
+const DEFAULT_BLOG_AUTHOR = "Randy Kirsch";
+
 function createEmptyBlogForm(): BlogPostFormData {
   return {
     title: "",
+    author: DEFAULT_BLOG_AUTHOR,
     summary: "",
     slug: "",
     body_markdown: "",
@@ -26,9 +29,26 @@ function createEmptyFaqForm(): FAQFormData {
   return {
     question: "",
     answer_markdown: "",
-    sort_order: 0,
     published: true,
   };
+}
+
+function reorderFaqList(items: FAQItem[], sourceId: number, targetId: number): FAQItem[] | null {
+  const sourceIndex = items.findIndex((item) => item.id === sourceId);
+  const targetIndex = items.findIndex((item) => item.id === targetId);
+
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return null;
+  }
+
+  const nextItems = [...items];
+  const [movedItem] = nextItems.splice(sourceIndex, 1);
+  nextItems.splice(targetIndex, 0, movedItem);
+
+  return nextItems.map((item, index) => ({
+    ...item,
+    sort_order: index,
+  }));
 }
 
 export function AdminPage() {
@@ -41,6 +61,9 @@ export function AdminPage() {
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [draggedFaqId, setDraggedFaqId] = useState<number | null>(null);
+  const [dropTargetFaqId, setDropTargetFaqId] = useState<number | null>(null);
+  const [isReorderingFaqs, setIsReorderingFaqs] = useState(false);
 
   async function loadAll(): Promise<void> {
     setStatus("loading");
@@ -80,6 +103,7 @@ export function AdminPage() {
 
     const payload: BlogPostPayload = {
       ...blogForm,
+      author: blogForm.author.trim(),
       slug: blogForm.slug.trim() || null,
     };
 
@@ -150,16 +174,71 @@ export function AdminPage() {
     }
   }
 
+  function handleFaqDragStart(event: DragEvent<HTMLButtonElement>, faqId: number): void {
+    if (isReorderingFaqs) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(faqId));
+    setDraggedFaqId(faqId);
+    setDropTargetFaqId(faqId);
+  }
+
+  function handleFaqDragOver(event: DragEvent<HTMLElement>, faqId: number): void {
+    if (draggedFaqId === null || draggedFaqId === faqId || isReorderingFaqs) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetFaqId(faqId);
+  }
+
+  function handleFaqDragEnd(): void {
+    setDraggedFaqId(null);
+    setDropTargetFaqId(null);
+  }
+
+  async function handleFaqDrop(targetFaqId: number): Promise<void> {
+    if (draggedFaqId === null || isReorderingFaqs) {
+      return;
+    }
+
+    setDropTargetFaqId(null);
+
+    const previousFaqs = faqs;
+    const reorderedFaqs = reorderFaqList(previousFaqs, draggedFaqId, targetFaqId);
+    setDraggedFaqId(null);
+
+    if (reorderedFaqs === null) {
+      return;
+    }
+
+    setFaqs(reorderedFaqs);
+    setNotice("");
+    setError("");
+    setIsReorderingFaqs(true);
+
+    try {
+      const savedFaqs = await api.reorderFaqs(reorderedFaqs.map((faq) => faq.id));
+      setFaqs(savedFaqs);
+      setNotice("FAQ order updated.");
+    } catch (requestError: unknown) {
+      setFaqs(previousFaqs);
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsReorderingFaqs(false);
+    }
+  }
+
   return (
     <div className="admin-shell">
       <header className="admin-header admin-hero">
         <div className="admin-hero-copy">
-          <p className="eyebrow">Admin dashboard</p>
-          <h1>Manage FAQs and blog posts</h1>
-          <p className="admin-subtitle">
-            Simple content editing behind nginx auth. Update the FAQs guests see
-            most often, then publish trip notes and blog posts below.
-          </p>
+          <p className="eyebrow">Admin</p>
+          <h1>FAQs and Blog Posts</h1>
         </div>
         <div className="admin-hero-actions">
           <div className="admin-stat-row">
@@ -189,23 +268,42 @@ export function AdminPage() {
           <div className="panel-heading">
             <div>
               <p className="eyebrow">FAQ</p>
-              <h2>Guest questions</h2>
-              <p className="admin-section-note">
-                Keep the high-frequency answers tight, ordered, and easy to scan.
-              </p>
+              <h2>FAQs</h2>
             </div>
             <button className="button button-ghost" onClick={resetFaqEditor} type="button">
               New FAQ
             </button>
           </div>
 
-          <div className="admin-list">
+          <div aria-busy={isReorderingFaqs} className="admin-list">
             {faqs.map((faq) => (
-              <article className="admin-list-item" key={faq.id}>
+              <article
+                className={`admin-list-item${draggedFaqId === faq.id ? " dragging" : ""}${
+                  dropTargetFaqId === faq.id && draggedFaqId !== faq.id ? " drop-target" : ""
+                }`}
+                key={faq.id}
+                onDragOver={(event) => handleFaqDragOver(event, faq.id)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void handleFaqDrop(faq.id);
+                }}
+              >
                 <div className="admin-item-top">
-                  <div>
-                    <h3>{faq.question}</h3>
-                    <p className="admin-item-meta">Sort order: {faq.sort_order}</p>
+                  <div className="admin-item-heading">
+                    <button
+                      aria-label={`Drag to reorder ${faq.question}`}
+                      className="faq-drag-handle"
+                      disabled={isReorderingFaqs}
+                      draggable={!isReorderingFaqs}
+                      onDragEnd={handleFaqDragEnd}
+                      onDragStart={(event) => handleFaqDragStart(event, faq.id)}
+                      type="button"
+                    >
+                      Drag
+                    </button>
+                    <div>
+                      <h3>{faq.question}</h3>
+                    </div>
                   </div>
                   <span className={`pill${faq.published ? " live" : ""}`}>
                     {faq.published ? "Published" : "Hidden"}
@@ -220,7 +318,6 @@ export function AdminPage() {
                       setFaqForm({
                         question: faq.question,
                         answer_markdown: faq.answer_markdown,
-                        sort_order: faq.sort_order,
                         published: faq.published,
                       });
                     }}
@@ -244,7 +341,6 @@ export function AdminPage() {
           <form className="editor-form admin-editor" onSubmit={handleFaqSubmit}>
             <div className="admin-editor-heading">
               <div>
-                <p className="eyebrow">Editor</p>
                 <h3>{editingFaqId ? "Edit FAQ" : "Create FAQ"}</h3>
               </div>
               {editingFaqId ? (
@@ -281,20 +377,7 @@ export function AdminPage() {
                 value={faqForm.answer_markdown}
               />
             </label>
-            <div className="admin-form-row">
-              <label>
-                Sort order
-                <input
-                  onChange={(event) =>
-                    setFaqForm((current) => ({
-                      ...current,
-                      sort_order: Number(event.target.value),
-                    }))
-                  }
-                  type="number"
-                  value={faqForm.sort_order}
-                />
-              </label>
+            <div className="admin-form-row admin-form-row-single">
               <label className="checkbox-row">
                 <input
                   checked={faqForm.published}
@@ -319,11 +402,7 @@ export function AdminPage() {
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Blog</p>
-              <h2>Posts</h2>
-              <p className="admin-section-note">
-                Publish guides, updates, and booking-friendly content without
-                touching code.
-              </p>
+              <h2>Blog Posts</h2>
             </div>
             <button className="button button-ghost" onClick={resetBlogEditor} type="button">
               New post
@@ -336,7 +415,9 @@ export function AdminPage() {
                 <div className="admin-item-top">
                   <div>
                     <h3>{post.title}</h3>
-                    <p className="admin-item-meta">/{post.slug}</p>
+                    <p className="admin-item-meta">
+                      {post.author ? `${post.author} • /${post.slug}` : `/${post.slug}`}
+                    </p>
                   </div>
                   <span className={`pill${post.published ? " live" : ""}`}>
                     {post.published ? "Published" : "Hidden"}
@@ -350,6 +431,7 @@ export function AdminPage() {
                       setEditingBlogId(post.id);
                       setBlogForm({
                         title: post.title,
+                        author: post.author,
                         summary: post.summary,
                         slug: post.slug,
                         body_markdown: post.body_markdown,
@@ -376,7 +458,6 @@ export function AdminPage() {
           <form className="editor-form admin-editor" onSubmit={handleBlogSubmit}>
             <div className="admin-editor-heading">
               <div>
-                <p className="eyebrow">Editor</p>
                 <h3>{editingBlogId ? "Edit post" : "Create post"}</h3>
               </div>
               {editingBlogId ? (
@@ -397,6 +478,19 @@ export function AdminPage() {
                 required
                 type="text"
                 value={blogForm.title}
+              />
+            </label>
+            <label>
+              Author
+              <input
+                onChange={(event) =>
+                  setBlogForm((current) => ({
+                    ...current,
+                    author: event.target.value,
+                  }))
+                }
+                type="text"
+                value={blogForm.author}
               />
             </label>
             <label>

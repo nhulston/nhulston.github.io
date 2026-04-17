@@ -16,6 +16,7 @@ class BlogPost(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     slug: Mapped[str] = mapped_column(String(180), unique=True, index=True)
     title: Mapped[str] = mapped_column(String(255))
+    author: Mapped[str] = mapped_column(String(160), default="")
     summary: Mapped[str] = mapped_column(String(400), default="")
     body_markdown: Mapped[str] = mapped_column(Text)
     published: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
@@ -42,4 +43,3 @@ class FAQItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
-

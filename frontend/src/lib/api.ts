@@ -42,6 +42,12 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify(payload),
     }),
+  reorderFaqs: (faqIds: number[]) =>
+    request<FAQItem[]>("/api/admin/faqs/reorder", {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ faq_ids: faqIds }),
+    }),
   updateFaq: (id: number, payload: FAQFormData) =>
     request<FAQItem>(`/api/admin/faqs/${id}`, {
       method: "PUT",

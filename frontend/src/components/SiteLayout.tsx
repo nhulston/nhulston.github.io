@@ -79,7 +79,7 @@ export function SiteLayout() {
       <footer id="footer">
         <div className="row2">
           <div className="column2">
-            <p>Copyright © 2025 | The Lodge at Park City</p>
+            <p>Copyright © 2026 | The Lodge at Park City</p>
           </div>
           <div className="column2">
             <p>

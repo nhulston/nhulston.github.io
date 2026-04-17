@@ -13,6 +13,7 @@ from app.schemas import (
     BlogPostRead,
     BlogPostUpdate,
     FAQItemCreate,
+    FAQOrderUpdate,
     FAQItemRead,
     FAQItemUpdate,
 )
@@ -42,6 +43,7 @@ def unique_blog_slug(
 def set_blog_fields(post: BlogPost, payload: BlogPostCreate | BlogPostUpdate, db: Session) -> None:
     post.slug = unique_blog_slug(db, payload.title, payload.slug, getattr(post, "id", None))
     post.title = payload.title
+    post.author = payload.author.strip()
     post.summary = payload.summary
     post.body_markdown = payload.body_markdown
     post.published = payload.published
@@ -157,10 +159,11 @@ def list_admin_faqs(db: Session = Depends(get_db)) -> list[FAQItem]:
     dependencies=[Depends(require_admin)],
 )
 def create_faq_item(payload: FAQItemCreate, db: Session = Depends(get_db)) -> FAQItem:
+    highest_sort_order = db.scalar(select(func.max(FAQItem.sort_order)))
     faq = FAQItem(
         question=payload.question,
         answer_markdown=payload.answer_markdown,
-        sort_order=payload.sort_order,
+        sort_order=0 if highest_sort_order is None else highest_sort_order + 1,
         published=payload.published,
     )
     db.add(faq)
@@ -180,11 +183,39 @@ def update_faq_item(faq_id: int, payload: FAQItemUpdate, db: Session = Depends(g
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="FAQ not found.")
     faq.question = payload.question
     faq.answer_markdown = payload.answer_markdown
-    faq.sort_order = payload.sort_order
     faq.published = payload.published
     db.commit()
     db.refresh(faq)
     return faq
+
+
+@app.post(
+    "/api/admin/faqs/reorder",
+    response_model=list[FAQItemRead],
+    dependencies=[Depends(require_admin)],
+)
+def reorder_faq_items(payload: FAQOrderUpdate, db: Session = Depends(get_db)) -> list[FAQItem]:
+    current_ids = list(db.scalars(select(FAQItem.id)))
+    requested_ids = payload.faq_ids
+
+    if (
+        len(requested_ids) != len(current_ids)
+        or len(set(requested_ids)) != len(requested_ids)
+        or set(requested_ids) != set(current_ids)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="FAQ reorder payload must include every FAQ exactly once.",
+        )
+
+    faq_map = {faq.id: faq for faq in db.scalars(select(FAQItem).where(FAQItem.id.in_(requested_ids)))}
+    for sort_order, faq_id in enumerate(requested_ids):
+        faq_map[faq_id].sort_order = sort_order
+
+    db.commit()
+
+    statement = select(FAQItem).order_by(FAQItem.sort_order.asc(), FAQItem.updated_at.desc())
+    return list(db.scalars(statement))
 
 
 @app.delete(
