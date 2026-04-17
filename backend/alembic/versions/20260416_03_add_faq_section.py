@@ -18,17 +18,36 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "faq_items",
-        sa.Column(
-            "section",
-            sa.String(length=120),
-            nullable=False,
-            server_default="",
-        ),
+    op.create_table(
+        "faq_sections",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("name", sa.String(length=120), nullable=False),
+        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.alter_column("faq_items", "section", existing_type=sa.String(length=120), server_default=None)
+    op.create_index("ix_faq_sections_id", "faq_sections", ["id"], unique=False)
+    op.create_index("ix_faq_sections_name", "faq_sections", ["name"], unique=True)
+    op.create_index("ix_faq_sections_sort_order", "faq_sections", ["sort_order"], unique=False)
+
+    op.add_column("faq_items", sa.Column("faq_section_id", sa.Integer(), nullable=False))
+    op.create_index("ix_faq_items_faq_section_id", "faq_items", ["faq_section_id"], unique=False)
+    op.create_foreign_key(
+        "fk_faq_items_faq_section_id",
+        "faq_items",
+        "faq_sections",
+        ["faq_section_id"],
+        ["id"],
+        ondelete="RESTRICT",
+    )
 
 
 def downgrade() -> None:
-    op.drop_column("faq_items", "section")
+    op.drop_constraint("fk_faq_items_faq_section_id", "faq_items", type_="foreignkey")
+    op.drop_index("ix_faq_items_faq_section_id", table_name="faq_items")
+    op.drop_column("faq_items", "faq_section_id")
+
+    op.drop_index("ix_faq_sections_sort_order", table_name="faq_sections")
+    op.drop_index("ix_faq_sections_name", table_name="faq_sections")
+    op.drop_index("ix_faq_sections_id", table_name="faq_sections")
+    op.drop_table("faq_sections")

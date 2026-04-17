@@ -3,7 +3,9 @@ import type {
   BlogPostPayload,
   FAQFormData,
   FAQItem,
-  FAQOrderItem,
+  FAQPublicSection,
+  FAQSection,
+  FAQSectionFormData,
 } from "../types";
 
 const jsonHeaders: HeadersInit = {
@@ -33,9 +35,32 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  getPublicFaqs: () => request<FAQItem[]>("/api/public/faqs"),
+  getPublicFaqs: () => request<FAQPublicSection[]>("/api/public/faqs"),
   getPublicBlogPosts: () => request<BlogPost[]>("/api/public/blog-posts"),
   getPublicBlogPost: (slug: string) => request<BlogPost>(`/api/public/blog-posts/${slug}`),
+  getAdminFaqSections: () => request<FAQSection[]>("/api/admin/faq-sections"),
+  createFaqSection: (payload: FAQSectionFormData) =>
+    request<FAQSection>("/api/admin/faq-sections", {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify(payload),
+    }),
+  updateFaqSection: (id: number, payload: FAQSectionFormData) =>
+    request<FAQSection>(`/api/admin/faq-sections/${id}`, {
+      method: "PUT",
+      headers: jsonHeaders,
+      body: JSON.stringify(payload),
+    }),
+  reorderFaqSections: (sectionIds: number[]) =>
+    request<FAQSection[]>("/api/admin/faq-sections/reorder", {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ section_ids: sectionIds }),
+    }),
+  deleteFaqSection: (id: number) =>
+    request<void>(`/api/admin/faq-sections/${id}`, {
+      method: "DELETE",
+    }),
   getAdminFaqs: () => request<FAQItem[]>("/api/admin/faqs"),
   createFaq: (payload: FAQFormData) =>
     request<FAQItem>("/api/admin/faqs", {
@@ -43,11 +68,11 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify(payload),
     }),
-  reorderFaqs: (items: FAQOrderItem[]) =>
-    request<FAQItem[]>("/api/admin/faqs/reorder", {
+  reorderFaqs: (sectionId: number, faqIds: number[]) =>
+    request<FAQItem[]>(`/api/admin/faq-sections/${sectionId}/faqs/reorder`, {
       method: "POST",
       headers: jsonHeaders,
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ faq_ids: faqIds }),
     }),
   updateFaq: (id: number, payload: FAQFormData) =>
     request<FAQItem>(`/api/admin/faqs/${id}`, {

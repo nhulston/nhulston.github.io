@@ -29,19 +29,44 @@ class BlogPostRead(BlogPostBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class FAQSectionBase(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Section name is required.")
+        return normalized
+
+
+class FAQSectionCreate(FAQSectionBase):
+    pass
+
+
+class FAQSectionUpdate(FAQSectionBase):
+    pass
+
+
+class FAQSectionOrderUpdate(BaseModel):
+    section_ids: list[int] = Field(default_factory=list)
+
+
+class FAQSectionRead(FAQSectionBase):
+    id: int
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FAQItemBase(BaseModel):
-    section: str = Field(min_length=1, max_length=120)
+    faq_section_id: int
     question: str = Field(min_length=1, max_length=255)
     answer_markdown: str = Field(min_length=1)
     published: bool = True
-
-    @field_validator("section")
-    @classmethod
-    def normalize_section(cls, value: str) -> str:
-        normalized = value.strip()
-        if not normalized:
-            raise ValueError("Section is required.")
-        return normalized
 
 
 class FAQItemCreate(FAQItemBase):
@@ -52,27 +77,30 @@ class FAQItemUpdate(FAQItemBase):
     pass
 
 
-class FAQOrderEntry(BaseModel):
-    id: int
-    section: str = Field(min_length=1, max_length=120)
-
-    @field_validator("section")
-    @classmethod
-    def normalize_section(cls, value: str) -> str:
-        normalized = value.strip()
-        if not normalized:
-            raise ValueError("Section is required.")
-        return normalized
-
-
 class FAQOrderUpdate(BaseModel):
-    items: list[FAQOrderEntry] = Field(default_factory=list)
+    faq_ids: list[int] = Field(default_factory=list)
 
 
-class FAQItemRead(FAQItemBase):
+class FAQItemPublicRead(BaseModel):
     id: int
+    question: str
+    answer_markdown: str
     sort_order: int
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FAQItemRead(FAQItemBase):
+    id: int
+    section: FAQSectionRead
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FAQSectionPublicRead(FAQSectionRead):
+    items: list[FAQItemPublicRead] = Field(default_factory=list)
