@@ -1314,15 +1314,19 @@ h3 {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1rem;
   background: rgba(16, 26, 39, 0.48);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 1000;
 }
 
 .admin-dialog {
   width: min(640px, 100%);
+  max-height: calc(100vh - 2rem);
+  margin: auto 0;
 }
 
 .admin-dialog-wide {
@@ -1334,6 +1338,9 @@ h3 {
   border: 1px solid #dde5ee;
   border-radius: 0.85rem;
   background: #ffffff;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .admin-dialog-header {
