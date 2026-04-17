@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { SiteLayout } from "./components/SiteLayout";
 import { AdminPage } from "./pages/AdminPage";
@@ -19,7 +19,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="/admin" element={<AdminPage />} />
-      <Route path="/admin/" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
 }
