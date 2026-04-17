@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
@@ -42,11 +42,6 @@ export function AdminPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const pageTitle = useMemo(
-    () => (editingBlogId || editingFaqId ? "Edit content" : "Create content"),
-    [editingBlogId, editingFaqId],
-  );
-
   async function loadAll(): Promise<void> {
     setStatus("loading");
     setError("");
@@ -68,6 +63,16 @@ export function AdminPage() {
     loadAll();
   }, []);
 
+  function resetBlogEditor(): void {
+    setEditingBlogId(null);
+    setBlogForm(createEmptyBlogForm());
+  }
+
+  function resetFaqEditor(): void {
+    setEditingFaqId(null);
+    setFaqForm(createEmptyFaqForm());
+  }
+
   async function handleBlogSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setNotice("");
@@ -86,8 +91,7 @@ export function AdminPage() {
         await api.createBlogPost(payload);
         setNotice("Blog post created.");
       }
-      setBlogForm(createEmptyBlogForm());
-      setEditingBlogId(null);
+      resetBlogEditor();
       await loadAll();
     } catch (requestError: unknown) {
       setError(getErrorMessage(requestError));
@@ -107,8 +111,7 @@ export function AdminPage() {
         await api.createFaq(faqForm);
         setNotice("FAQ created.");
       }
-      setFaqForm(createEmptyFaqForm());
-      setEditingFaqId(null);
+      resetFaqEditor();
       await loadAll();
     } catch (requestError: unknown) {
       setError(getErrorMessage(requestError));
@@ -123,8 +126,7 @@ export function AdminPage() {
       await api.deleteBlogPost(id);
       setNotice("Blog post deleted.");
       if (editingBlogId === id) {
-        setEditingBlogId(null);
-        setBlogForm(createEmptyBlogForm());
+        resetBlogEditor();
       }
       await loadAll();
     } catch (requestError: unknown) {
@@ -140,8 +142,7 @@ export function AdminPage() {
       await api.deleteFaq(id);
       setNotice("FAQ deleted.");
       if (editingFaqId === id) {
-        setEditingFaqId(null);
-        setFaqForm(createEmptyFaqForm());
+        resetFaqEditor();
       }
       await loadAll();
     } catch (requestError: unknown) {
@@ -151,18 +152,30 @@ export function AdminPage() {
 
   return (
     <div className="admin-shell">
-      <header className="admin-header">
-        <div>
+      <header className="admin-header admin-hero">
+        <div className="admin-hero-copy">
           <p className="eyebrow">Admin dashboard</p>
-          <h1>Blog and FAQ CRUD</h1>
+          <h1>Manage FAQs and blog posts</h1>
           <p className="admin-subtitle">
-            Protected by nginx basic auth. The app itself only exposes content
-            editing.
+            Simple content editing behind nginx auth. Update the FAQs guests see
+            most often, then publish trip notes and blog posts below.
           </p>
         </div>
-        <a className="button button-secondary" href="/">
-          View site
-        </a>
+        <div className="admin-hero-actions">
+          <div className="admin-stat-row">
+            <div className="admin-stat">
+              <span className="admin-stat-label">FAQs</span>
+              <strong>{faqs.length}</strong>
+            </div>
+            <div className="admin-stat">
+              <span className="admin-stat-label">Posts</span>
+              <strong>{blogPosts.length}</strong>
+            </div>
+          </div>
+          <a className="button button-secondary" href="/">
+            View site
+          </a>
+        </div>
       </header>
 
       <div className="admin-alerts">
@@ -171,34 +184,165 @@ export function AdminPage() {
         {status === "loading" ? <p className="notice">Loading content...</p> : null}
       </div>
 
-      <section className="admin-grid">
-        <div className="admin-panel">
+      <div className="admin-sections">
+        <section className="admin-panel admin-section">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">FAQ</p>
+              <h2>Guest questions</h2>
+              <p className="admin-section-note">
+                Keep the high-frequency answers tight, ordered, and easy to scan.
+              </p>
+            </div>
+            <button className="button button-ghost" onClick={resetFaqEditor} type="button">
+              New FAQ
+            </button>
+          </div>
+
+          <div className="admin-list">
+            {faqs.map((faq) => (
+              <article className="admin-list-item" key={faq.id}>
+                <div className="admin-item-top">
+                  <div>
+                    <h3>{faq.question}</h3>
+                    <p className="admin-item-meta">Sort order: {faq.sort_order}</p>
+                  </div>
+                  <span className={`pill${faq.published ? " live" : ""}`}>
+                    {faq.published ? "Published" : "Hidden"}
+                  </span>
+                </div>
+                <p className="admin-item-preview">{faq.answer_markdown.slice(0, 180)}</p>
+                <div className="row-actions">
+                  <button
+                    className="button button-ghost"
+                    onClick={() => {
+                      setEditingFaqId(faq.id);
+                      setFaqForm({
+                        question: faq.question,
+                        answer_markdown: faq.answer_markdown,
+                        sort_order: faq.sort_order,
+                        published: faq.published,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="button button-danger"
+                    onClick={() => handleDeleteFaq(faq.id)}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            ))}
+            {faqs.length === 0 ? <p className="empty-state">No FAQs yet.</p> : null}
+          </div>
+
+          <form className="editor-form admin-editor" onSubmit={handleFaqSubmit}>
+            <div className="admin-editor-heading">
+              <div>
+                <p className="eyebrow">Editor</p>
+                <h3>{editingFaqId ? "Edit FAQ" : "Create FAQ"}</h3>
+              </div>
+              {editingFaqId ? (
+                <button className="button button-ghost" onClick={resetFaqEditor} type="button">
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+            <label>
+              Question
+              <input
+                onChange={(event) =>
+                  setFaqForm((current) => ({
+                    ...current,
+                    question: event.target.value,
+                  }))
+                }
+                required
+                type="text"
+                value={faqForm.question}
+              />
+            </label>
+            <label>
+              Answer
+              <textarea
+                onChange={(event) =>
+                  setFaqForm((current) => ({
+                    ...current,
+                    answer_markdown: event.target.value,
+                  }))
+                }
+                required
+                rows={8}
+                value={faqForm.answer_markdown}
+              />
+            </label>
+            <div className="admin-form-row">
+              <label>
+                Sort order
+                <input
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      sort_order: Number(event.target.value),
+                    }))
+                  }
+                  type="number"
+                  value={faqForm.sort_order}
+                />
+              </label>
+              <label className="checkbox-row">
+                <input
+                  checked={faqForm.published}
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      published: event.target.checked,
+                    }))
+                  }
+                  type="checkbox"
+                />
+                Published
+              </label>
+            </div>
+            <button className="button button-primary" type="submit">
+              {editingFaqId ? "Update FAQ" : "Create FAQ"}
+            </button>
+          </form>
+        </section>
+
+        <section className="admin-panel admin-section">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Blog</p>
               <h2>Posts</h2>
+              <p className="admin-section-note">
+                Publish guides, updates, and booking-friendly content without
+                touching code.
+              </p>
             </div>
-            <button
-              className="button button-ghost"
-              onClick={() => {
-                setEditingBlogId(null);
-                setBlogForm(createEmptyBlogForm());
-              }}
-              type="button"
-            >
+            <button className="button button-ghost" onClick={resetBlogEditor} type="button">
               New post
             </button>
           </div>
+
           <div className="admin-list">
             {blogPosts.map((post) => (
               <article className="admin-list-item" key={post.id}>
-                <div>
-                  <h3>{post.title}</h3>
-                  <p>{post.slug}</p>
+                <div className="admin-item-top">
+                  <div>
+                    <h3>{post.title}</h3>
+                    <p className="admin-item-meta">/{post.slug}</p>
+                  </div>
                   <span className={`pill${post.published ? " live" : ""}`}>
                     {post.published ? "Published" : "Hidden"}
                   </span>
                 </div>
+                <p className="admin-item-preview">{post.summary || "No summary yet."}</p>
                 <div className="row-actions">
                   <button
                     className="button button-ghost"
@@ -226,12 +370,21 @@ export function AdminPage() {
                 </div>
               </article>
             ))}
-            {blogPosts.length === 0 ? (
-              <p className="empty-state">No blog posts yet.</p>
-            ) : null}
+            {blogPosts.length === 0 ? <p className="empty-state">No blog posts yet.</p> : null}
           </div>
-          <form className="editor-form" onSubmit={handleBlogSubmit}>
-            <h3>{editingBlogId ? "Edit post" : "Create post"}</h3>
+
+          <form className="editor-form admin-editor" onSubmit={handleBlogSubmit}>
+            <div className="admin-editor-heading">
+              <div>
+                <p className="eyebrow">Editor</p>
+                <h3>{editingBlogId ? "Edit post" : "Create post"}</h3>
+              </div>
+              {editingBlogId ? (
+                <button className="button button-ghost" onClick={resetBlogEditor} type="button">
+                  Cancel
+                </button>
+              ) : null}
+            </div>
             <label>
               Title
               <input
@@ -283,7 +436,7 @@ export function AdminPage() {
                   }))
                 }
                 required
-                rows={10}
+                rows={12}
                 value={blogForm.body_markdown}
               />
             </label>
@@ -304,127 +457,8 @@ export function AdminPage() {
               {editingBlogId ? "Update post" : "Create post"}
             </button>
           </form>
-        </div>
-
-        <div className="admin-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">FAQ</p>
-              <h2>Questions</h2>
-            </div>
-            <button
-              className="button button-ghost"
-              onClick={() => {
-                setEditingFaqId(null);
-                setFaqForm(createEmptyFaqForm());
-              }}
-              type="button"
-            >
-              New FAQ
-            </button>
-          </div>
-          <div className="admin-list">
-            {faqs.map((faq) => (
-              <article className="admin-list-item" key={faq.id}>
-                <div>
-                  <h3>{faq.question}</h3>
-                  <p>Sort order: {faq.sort_order}</p>
-                  <span className={`pill${faq.published ? " live" : ""}`}>
-                    {faq.published ? "Published" : "Hidden"}
-                  </span>
-                </div>
-                <div className="row-actions">
-                  <button
-                    className="button button-ghost"
-                    onClick={() => {
-                      setEditingFaqId(faq.id);
-                      setFaqForm({
-                        question: faq.question,
-                        answer_markdown: faq.answer_markdown,
-                        sort_order: faq.sort_order,
-                        published: faq.published,
-                      });
-                    }}
-                    type="button"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="button button-danger"
-                    onClick={() => handleDeleteFaq(faq.id)}
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            ))}
-            {faqs.length === 0 ? <p className="empty-state">No FAQs yet.</p> : null}
-          </div>
-          <form className="editor-form" onSubmit={handleFaqSubmit}>
-            <h3>{editingFaqId ? "Edit FAQ" : "Create FAQ"}</h3>
-            <label>
-              Question
-              <input
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    question: event.target.value,
-                  }))
-                }
-                required
-                type="text"
-                value={faqForm.question}
-              />
-            </label>
-            <label>
-              Answer
-              <textarea
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    answer_markdown: event.target.value,
-                  }))
-                }
-                required
-                rows={8}
-                value={faqForm.answer_markdown}
-              />
-            </label>
-            <label>
-              Sort order
-              <input
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    sort_order: Number(event.target.value),
-                  }))
-                }
-                type="number"
-                value={faqForm.sort_order}
-              />
-            </label>
-            <label className="checkbox-row">
-              <input
-                checked={faqForm.published}
-                onChange={(event) =>
-                  setFaqForm((current) => ({
-                    ...current,
-                    published: event.target.checked,
-                  }))
-                }
-                type="checkbox"
-              />
-              Published
-            </label>
-            <button className="button button-primary" type="submit">
-              {editingFaqId ? "Update FAQ" : "Create FAQ"}
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <p className="admin-footnote">{pageTitle}</p>
+        </section>
+      </div>
     </div>
   );
 }
