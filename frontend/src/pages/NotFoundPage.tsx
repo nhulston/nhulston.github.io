@@ -2,14 +2,16 @@ import { Link } from "react-router-dom";
 
 export function NotFoundPage() {
   return (
-    <div className="page-shell page-stack">
-      <section className="content-card">
-        <p className="eyebrow">404</p>
-        <h1>That page does not exist.</h1>
-        <Link className="text-link" to="/">
-          Return to the homepage
+    <div className="page-content">
+      <h1 className="page-title">Page Not Found</h1>
+      <div className="page-status error">
+        <p>That page does not exist.</p>
+      </div>
+      <div className="blog-navigation">
+        <Link className="back-to-blog" to="/">
+          &lt;- Back Home
         </Link>
-      </section>
+      </div>
     </div>
   );
 }

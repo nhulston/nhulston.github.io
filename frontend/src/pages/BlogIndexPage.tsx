@@ -5,6 +5,14 @@ import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
 import type { BlogPost, LoadStatus } from "../types";
 
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 export function BlogIndexPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
@@ -35,30 +43,42 @@ export function BlogIndexPage() {
   }, []);
 
   return (
-    <div className="page-stack page-shell">
-      <section className="page-intro">
-        <p className="eyebrow">Blog</p>
-        <h1>Local tips, trip planning notes, and property updates.</h1>
-      </section>
+    <div className="page-content">
+      <h1 className="page-title">Our Blog</h1>
 
-      {status === "loading" ? <p className="empty-state">Loading posts...</p> : null}
-      {status === "error" ? <p className="empty-state">{error}</p> : null}
-      {status === "ready" && posts.length === 0 ? (
-        <p className="empty-state">No published blog posts yet.</p>
+      {status === "loading" ? (
+        <div className="page-status">
+          <p>Loading posts...</p>
+        </div>
+      ) : null}
+      {status === "error" ? (
+        <div className="page-status error">
+          <p>{error}</p>
+        </div>
       ) : null}
 
-      <section className="blog-grid">
+      <div className="blog-list">
+        {status === "ready" && posts.length === 0 ? (
+          <div className="page-status">
+            <p>No published blog posts yet.</p>
+          </div>
+        ) : null}
+
         {posts.map((post) => (
           <article className="blog-card" key={post.id}>
-            <p className="list-card-meta">
-              {new Date(post.published_at || post.created_at).toLocaleDateString()}
+            <h2 className="blog-title">
+              <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+            </h2>
+            <p className="blog-date">
+              {formatDate(post.published_at || post.created_at)} • By The Lodge at Park City
             </p>
-            <h2>{post.title}</h2>
-            <p>{post.summary}</p>
-            <Link to={`/blog/${post.slug}`}>Read post</Link>
+            <p className="blog-excerpt">{post.summary}</p>
+            <Link className="read-more" to={`/blog/${post.slug}`}>
+              Read More -&gt;
+            </Link>
           </article>
         ))}
-      </section>
+      </div>
     </div>
   );
 }

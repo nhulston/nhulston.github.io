@@ -1,74 +1,95 @@
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Stay" },
-  { to: "/blog", label: "Blog" },
+  { to: "/", label: "Home" },
   { to: "/faq", label: "FAQ" },
+  { to: "/blog", label: "Blog" },
 ];
 
 export function SiteLayout() {
+  const navbarRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const navbarElement = navbarRef.current;
+    if (navbarElement === null) {
+      return undefined;
+    }
+
+    document.body.classList.add("public-site");
+
+    let lastScrollTop = 0;
+    const navbarHeight = 70;
+
+    function handleScroll() {
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollDiff = currentScroll - lastScrollTop;
+      const currentTransform =
+        Number.parseInt(
+          navbarElement!.style.transform.replace("translateY(", "").replace("px)", ""),
+          10,
+        ) || 0;
+
+      if (currentScroll > lastScrollTop && currentScroll > 10) {
+        const nextTransform = Math.max(-navbarHeight, currentTransform - scrollDiff);
+        navbarElement!.style.transform = `translateY(${nextTransform}px)`;
+      } else if (currentScroll < lastScrollTop) {
+        const nextTransform = Math.min(0, currentTransform - scrollDiff);
+        navbarElement!.style.transform = `translateY(${nextTransform}px)`;
+      }
+
+      if (currentScroll <= 0) {
+        navbarElement!.style.transform = "translateY(0)";
+      }
+
+      lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+    }
+
+    window.addEventListener("scroll", handleScroll, false);
+
+    return () => {
+      document.body.classList.remove("public-site");
+      window.removeEventListener("scroll", handleScroll, false);
+    };
+  }, []);
+
   return (
     <div className="site-shell">
-      <header className="site-header">
-        <div className="brand-lockup">
-          <p className="eyebrow">The Lodge at Park City</p>
-          <NavLink className="brand-title" to="/">
-            Ski-in. Ski-out. Stay close to everything.
-          </NavLink>
-        </div>
-        <nav className="site-nav" aria-label="Primary">
+      <nav id="navbar" ref={navbarRef}>
+        <div className="nav-content">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               className={({ isActive }) =>
-                `site-nav-link${isActive ? " active" : ""}`
+                `nav-link${isActive ? " active" : ""}`
               }
+              end={item.to === "/"}
               to={item.to}
             >
               {item.label}
             </NavLink>
           ))}
-          <a
-            className="site-nav-cta"
-            href="https://thelodgeatmountainvillage.bookeddirectly.com/"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Book Now
-          </a>
-        </nav>
-      </header>
-      <main>
+        </div>
+      </nav>
+
+      <main className="site-main">
         <Outlet />
       </main>
-      <footer className="site-footer">
-        <div>
-          <p className="footer-title">Book Direct</p>
-          <p>Best location, fast lift access, and room for the whole crew.</p>
-        </div>
-        <div>
-          <p className="footer-title">Contact</p>
-          <p>
-            <a href="mailto:Lodgeatmountainvillage@gmail.com">
-              lodgeatmountainvillage@gmail.com
-            </a>
-          </p>
-          <p>(480) 945-1952</p>
-        </div>
-        <div>
-          <p className="footer-title">Follow</p>
-          <p>
-            <a
-              href="https://www.facebook.com/The-Lodge-at-Park-City-Mountain-Resort-105341847843419/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Facebook
-            </a>
-          </p>
-          <p>
-            <a href="/admin">Admin</a>
-          </p>
+
+      <footer id="footer">
+        <div className="row2">
+          <div className="column2">
+            <p>Copyright © 2025 | The Lodge at Park City</p>
+          </div>
+          <div className="column2">
+            <p>
+              <a href="mailto:Lodgeatmountainvillage@gmail.com">
+                LODGEATMOUNTAINVILLAGE@GMAIL.COM
+              </a>
+              <br />
+              (480) 945-1952
+            </p>
+          </div>
         </div>
       </footer>
     </div>

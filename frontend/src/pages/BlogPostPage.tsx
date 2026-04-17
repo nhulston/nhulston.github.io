@@ -6,6 +6,14 @@ import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
 import type { BlogPost, LoadStatus } from "../types";
 
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 export function BlogPostPage() {
   const { slug } = useParams();
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -41,30 +49,41 @@ export function BlogPostPage() {
   }, [slug]);
 
   return (
-    <div className="page-stack page-shell">
-      {status === "loading" ? <p className="empty-state">Loading post...</p> : null}
-      {status === "error" ? (
-        <div className="content-card">
-          <p className="empty-state">{error}</p>
-          <Link className="text-link" to="/blog">
-            Back to blog
-          </Link>
+    <div className="page-content">
+      {status === "loading" ? (
+        <div className="page-status">
+          <p>Loading post...</p>
         </div>
       ) : null}
+
+      {status === "error" ? (
+        <div className="page-status error">
+          <p>{error}</p>
+          <div className="blog-navigation">
+            <Link className="back-to-blog" to="/blog">
+              &lt;- Back to Blog
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {status === "ready" && post ? (
-        <article className="article-card">
-          <p className="eyebrow">Blog</p>
-          <h1>{post.title}</h1>
-          <p className="article-meta">
-            {new Date(post.published_at || post.created_at).toLocaleDateString()}
+        <article className="blog-post">
+          <h1 className="page-title">{post.title}</h1>
+          <p className="blog-date">
+            {formatDate(post.published_at || post.created_at)} • By The Lodge at Park City
           </p>
-          <p className="article-summary">{post.summary}</p>
-          <div className="markdown-body">
+
+          <div className="blog-content">
+            {post.summary ? <p>{post.summary}</p> : null}
             <ReactMarkdown>{post.body_markdown}</ReactMarkdown>
           </div>
-          <Link className="text-link" to="/blog">
-            Back to all posts
-          </Link>
+
+          <div className="blog-navigation">
+            <Link className="back-to-blog" to="/blog">
+              &lt;- Back to Blog
+            </Link>
+          </div>
         </article>
       ) : null}
     </div>

@@ -16,10 +16,10 @@ export default function App() {
         <Route path="/blog" element={<BlogIndexPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route path="/faq" element={<FaqPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/admin/" element={<Navigate to="/admin" replace />} />
-      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

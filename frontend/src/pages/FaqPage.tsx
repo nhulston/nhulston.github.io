@@ -35,27 +35,45 @@ export function FaqPage() {
   }, []);
 
   return (
-    <div className="page-stack page-shell">
-      <section className="page-intro">
-        <p className="eyebrow">FAQ</p>
-        <h1>Answers for booking, arrival, and the stay itself.</h1>
-      </section>
+    <div className="page-content">
+      <h1 className="page-title">Frequently Asked Questions</h1>
 
-      {status === "loading" ? <p className="empty-state">Loading FAQ...</p> : null}
-      {status === "error" ? <p className="empty-state">{error}</p> : null}
-      {status === "ready" && faqs.length === 0 ? (
-        <p className="empty-state">No published FAQs yet.</p>
-      ) : null}
+      <div className="faq-container">
+        {status === "loading" ? (
+          <div className="page-status">
+            <p>Loading FAQ...</p>
+          </div>
+        ) : null}
+        {status === "error" ? (
+          <div className="page-status error">
+            <p>{error}</p>
+          </div>
+        ) : null}
+        {status === "ready" && faqs.length === 0 ? (
+          <div className="page-status">
+            <p>No published FAQs yet.</p>
+          </div>
+        ) : null}
 
-      <div className="faq-list">
         {faqs.map((faq) => (
-          <details className="faq-item" key={faq.id}>
-            <summary>{faq.question}</summary>
-            <div className="markdown-body">
+          <div className="faq-item" key={faq.id}>
+            <h3 className="faq-question">{faq.question}</h3>
+            <div className="faq-answer">
               <ReactMarkdown>{faq.answer_markdown}</ReactMarkdown>
             </div>
-          </details>
+          </div>
         ))}
+      </div>
+
+      <div className="contact-section">
+        <h2>Have more questions?</h2>
+        <p>
+          Contact us at{" "}
+          <a href="mailto:Lodgeatmountainvillage@gmail.com">
+            LODGEATMOUNTAINVILLAGE@GMAIL.COM
+          </a>{" "}
+          or call <strong>(480) 945-1952</strong>
+        </p>
       </div>
     </div>
   );
