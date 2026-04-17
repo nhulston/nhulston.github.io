@@ -11,6 +11,15 @@ if (rootElement === null) {
   throw new Error("Root element not found.");
 }
 
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) =>
+      Promise.all(registrations.map((registration) => registration.unregister())),
+    )
+    .catch(() => undefined);
+}
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
