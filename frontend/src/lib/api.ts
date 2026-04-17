@@ -3,6 +3,7 @@ import type {
   BlogPostPayload,
   FAQFormData,
   FAQItem,
+  FAQOrderItem,
 } from "../types";
 
 const jsonHeaders: HeadersInit = {
@@ -42,11 +43,11 @@ export const api = {
       headers: jsonHeaders,
       body: JSON.stringify(payload),
     }),
-  reorderFaqs: (faqIds: number[]) =>
+  reorderFaqs: (items: FAQOrderItem[]) =>
     request<FAQItem[]>("/api/admin/faqs/reorder", {
       method: "POST",
       headers: jsonHeaders,
-      body: JSON.stringify({ faq_ids: faqIds }),
+      body: JSON.stringify({ items }),
     }),
   updateFaq: (id: number, payload: FAQFormData) =>
     request<FAQItem>(`/api/admin/faqs/${id}`, {

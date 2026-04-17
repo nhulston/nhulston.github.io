@@ -1,6 +1,17 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+FAQSection = Literal[
+    "Parking and Transportation",
+    "Check-In and Check-Out",
+    "Luggage Storage",
+    "Extending Your Stay",
+    "Condo Policies",
+    "Amenities & Services",
+]
 
 
 class BlogPostBase(BaseModel):
@@ -30,6 +41,7 @@ class BlogPostRead(BlogPostBase):
 
 
 class FAQItemBase(BaseModel):
+    section: FAQSection
     question: str = Field(min_length=1, max_length=255)
     answer_markdown: str = Field(min_length=1)
     published: bool = True
@@ -43,8 +55,13 @@ class FAQItemUpdate(FAQItemBase):
     pass
 
 
+class FAQOrderEntry(BaseModel):
+    id: int
+    section: FAQSection
+
+
 class FAQOrderUpdate(BaseModel):
-    faq_ids: list[int] = Field(default_factory=list)
+    items: list[FAQOrderEntry] = Field(default_factory=list)
 
 
 class FAQItemRead(FAQItemBase):

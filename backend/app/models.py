@@ -33,6 +33,7 @@ class FAQItem(Base):
     __tablename__ = "faq_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    section: Mapped[str] = mapped_column(String(120), default="Parking and Transportation")
     question: Mapped[str] = mapped_column(String(255))
     answer_markdown: Mapped[str] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)

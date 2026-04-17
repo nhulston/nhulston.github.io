@@ -9,10 +9,19 @@ import type {
   BlogPostPayload,
   FAQFormData,
   FAQItem,
+  FAQSection,
   LoadStatus,
 } from "../types";
 
 const DEFAULT_BLOG_AUTHOR = "Randy Kirsch";
+const FAQ_SECTIONS: FAQSection[] = [
+  "Parking and Transportation",
+  "Check-In and Check-Out",
+  "Luggage Storage",
+  "Extending Your Stay",
+  "Condo Policies",
+  "Amenities & Services",
+];
 
 function padDatePart(value: number): string {
   return value.toString().padStart(2, "0");
@@ -55,28 +64,69 @@ function createEmptyBlogForm(): BlogPostFormData {
 
 function createEmptyFaqForm(): FAQFormData {
   return {
+    section: FAQ_SECTIONS[0],
     question: "",
     answer_markdown: "",
     published: true,
   };
 }
 
-function reorderFaqList(items: FAQItem[], sourceId: number, targetId: number): FAQItem[] | null {
-  const sourceIndex = items.findIndex((item) => item.id === sourceId);
-  const targetIndex = items.findIndex((item) => item.id === targetId);
+function groupFaqsBySection(items: FAQItem[]): Array<{ section: FAQSection; items: FAQItem[] }> {
+  return FAQ_SECTIONS.map((section) => ({
+    section,
+    items: items.filter((item) => item.section === section).sort((a, b) => a.sort_order - b.sort_order),
+  }));
+}
 
-  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
-    return null;
-  }
-
-  const nextItems = [...items];
-  const [movedItem] = nextItems.splice(sourceIndex, 1);
-  nextItems.splice(targetIndex, 0, movedItem);
-
-  return nextItems.map((item, index) => ({
+function flattenFaqGroups(groups: Array<{ section: FAQSection; items: FAQItem[] }>): FAQItem[] {
+  return groups.flatMap((group) => group.items).map((item, index) => ({
     ...item,
     sort_order: index,
   }));
+}
+
+function reorderFaqList(
+  items: FAQItem[],
+  sourceId: number,
+  targetSection: FAQSection,
+  targetId?: number,
+): FAQItem[] | null {
+  const sourceItem = items.find((item) => item.id === sourceId);
+  if (!sourceItem) {
+    return null;
+  }
+
+  const groups = groupFaqsBySection(items).map((group) => ({
+    section: group.section,
+    items: [...group.items],
+  }));
+  const sourceGroup = groups.find((group) => group.items.some((item) => item.id === sourceId));
+  const targetGroup = groups.find((group) => group.section === targetSection);
+
+  if (!sourceGroup || !targetGroup) {
+    return null;
+  }
+
+  const sourceIndex = sourceGroup.items.findIndex((item) => item.id === sourceId);
+  const [movedItem] = sourceGroup.items.splice(sourceIndex, 1);
+
+  if (!movedItem) {
+    return null;
+  }
+
+  movedItem.section = targetSection;
+
+  if (targetId !== undefined) {
+    const targetIndex = targetGroup.items.findIndex((item) => item.id === targetId);
+    if (targetIndex === -1) {
+      return null;
+    }
+    targetGroup.items.splice(targetIndex, 0, movedItem);
+  } else {
+    targetGroup.items.push(movedItem);
+  }
+
+  return flattenFaqGroups(groups);
 }
 
 export function AdminPage() {
@@ -170,6 +220,7 @@ export function AdminPage() {
   function openEditFaqEditor(faq: FAQItem): void {
     setEditingFaqId(faq.id);
     setFaqForm({
+      section: faq.section,
       question: faq.question,
       answer_markdown: faq.answer_markdown,
       published: faq.published,
@@ -287,7 +338,7 @@ export function AdminPage() {
     setDropTargetFaqId(null);
   }
 
-  async function handleFaqDrop(targetFaqId: number): Promise<void> {
+  async function handleFaqDrop(targetSection: FAQSection, targetFaqId?: number): Promise<void> {
     if (draggedFaqId === null || isReorderingFaqs) {
       return;
     }
@@ -295,7 +346,7 @@ export function AdminPage() {
     setDropTargetFaqId(null);
 
     const previousFaqs = faqs;
-    const reorderedFaqs = reorderFaqList(previousFaqs, draggedFaqId, targetFaqId);
+    const reorderedFaqs = reorderFaqList(previousFaqs, draggedFaqId, targetSection, targetFaqId);
     setDraggedFaqId(null);
 
     if (reorderedFaqs === null) {
@@ -308,7 +359,12 @@ export function AdminPage() {
     setIsReorderingFaqs(true);
 
     try {
-      const savedFaqs = await api.reorderFaqs(reorderedFaqs.map((faq) => faq.id));
+      const savedFaqs = await api.reorderFaqs(
+        reorderedFaqs.map((faq) => ({
+          id: faq.id,
+          section: faq.section,
+        })),
+      );
       setFaqs(savedFaqs);
       setNotice("FAQ order updated.");
     } catch (requestError: unknown) {
@@ -358,58 +414,89 @@ export function AdminPage() {
           </div>
 
           <div aria-busy={isReorderingFaqs} className="admin-list">
-            {faqs.map((faq) => (
-              <article
-                className={`admin-list-item${draggedFaqId === faq.id ? " dragging" : ""}${
-                  dropTargetFaqId === faq.id && draggedFaqId !== faq.id ? " drop-target" : ""
-                }`}
-                key={faq.id}
-                onDragOver={(event) => handleFaqDragOver(event, faq.id)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  void handleFaqDrop(faq.id);
-                }}
-              >
-                <div className="admin-item-top">
-                  <div className="admin-item-heading">
-                    <button
-                      aria-label={`Reorder ${faq.question}`}
-                      className="faq-drag-handle"
-                      disabled={isReorderingFaqs}
-                      draggable={!isReorderingFaqs}
-                      onDragEnd={handleFaqDragEnd}
-                      onDragStart={(event) => handleFaqDragStart(event, faq.id)}
-                      type="button"
-                    >
-                      Reorder
-                    </button>
-                    <div>
-                      <h3>{faq.question}</h3>
+            {faqs.length > 0
+              ? groupFaqsBySection(faqs).map(({ section, items }) => (
+                  <section className="admin-faq-section" key={section}>
+                    <div className="admin-faq-section-header">
+                      <h3>{section}</h3>
+                      <span className="admin-faq-section-count">{items.length}</span>
                     </div>
-                  </div>
-                  <span className={`pill${faq.published ? " live" : ""}`}>
-                    {faq.published ? "Published" : "Hidden"}
-                  </span>
-                </div>
-                <p className="admin-item-preview">{faq.answer_markdown.slice(0, 180)}</p>
-                <div className="row-actions">
-                  <button
-                    className="button button-ghost"
-                    onClick={() => openEditFaqEditor(faq)}
-                    type="button"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="button button-danger"
-                    onClick={() => handleDeleteFaq(faq.id)}
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            ))}
+                    <div
+                      className={`admin-faq-section-list${items.length === 0 ? " empty" : ""}`}
+                      onDragOver={(event) => {
+                        if (draggedFaqId === null || isReorderingFaqs) {
+                          return;
+                        }
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        setDropTargetFaqId(null);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        void handleFaqDrop(section);
+                      }}
+                    >
+                      {items.map((faq) => (
+                        <article
+                          className={`admin-list-item${draggedFaqId === faq.id ? " dragging" : ""}${
+                            dropTargetFaqId === faq.id && draggedFaqId !== faq.id
+                              ? " drop-target"
+                              : ""
+                          }`}
+                          key={faq.id}
+                          onDragOver={(event) => handleFaqDragOver(event, faq.id)}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            void handleFaqDrop(section, faq.id);
+                          }}
+                        >
+                          <div className="admin-item-top">
+                            <div className="admin-item-heading">
+                              <div className="admin-item-heading-main">
+                                <h3>{faq.question}</h3>
+                                <button
+                                  aria-label={`Reorder ${faq.question}`}
+                                  className="faq-drag-handle"
+                                  disabled={isReorderingFaqs}
+                                  draggable={!isReorderingFaqs}
+                                  onDragEnd={handleFaqDragEnd}
+                                  onDragStart={(event) => handleFaqDragStart(event, faq.id)}
+                                  type="button"
+                                >
+                                  Reorder
+                                </button>
+                              </div>
+                            </div>
+                            <span className={`pill${faq.published ? " live" : ""}`}>
+                              {faq.published ? "Published" : "Hidden"}
+                            </span>
+                          </div>
+                          <p className="admin-item-preview">{faq.answer_markdown.slice(0, 180)}</p>
+                          <div className="row-actions">
+                            <button
+                              className="button button-ghost"
+                              onClick={() => openEditFaqEditor(faq)}
+                              type="button"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="button button-danger"
+                              onClick={() => handleDeleteFaq(faq.id)}
+                              type="button"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                      {items.length === 0 ? (
+                        <div className="admin-faq-empty-dropzone">Drop an FAQ here</div>
+                      ) : null}
+                    </div>
+                  </section>
+                ))
+              : null}
             {faqs.length === 0 ? <p className="empty-state">No FAQs yet.</p> : null}
           </div>
         </section>
@@ -478,6 +565,24 @@ export function AdminPage() {
                   Close
                 </button>
               </div>
+              <label>
+                Section
+                <select
+                  onChange={(event) =>
+                    setFaqForm((current) => ({
+                      ...current,
+                      section: event.target.value as FAQSection,
+                    }))
+                  }
+                  value={faqForm.section}
+                >
+                  {FAQ_SECTIONS.map((section) => (
+                    <option key={section} value={section}>
+                      {section}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label>
                 Question
                 <input

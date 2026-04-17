@@ -161,6 +161,7 @@ def list_admin_faqs(db: Session = Depends(get_db)) -> list[FAQItem]:
 def create_faq_item(payload: FAQItemCreate, db: Session = Depends(get_db)) -> FAQItem:
     highest_sort_order = db.scalar(select(func.max(FAQItem.sort_order)))
     faq = FAQItem(
+        section=payload.section,
         question=payload.question,
         answer_markdown=payload.answer_markdown,
         sort_order=0 if highest_sort_order is None else highest_sort_order + 1,
@@ -181,6 +182,7 @@ def update_faq_item(faq_id: int, payload: FAQItemUpdate, db: Session = Depends(g
     faq = db.get(FAQItem, faq_id)
     if faq is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="FAQ not found.")
+    faq.section = payload.section
     faq.question = payload.question
     faq.answer_markdown = payload.answer_markdown
     faq.published = payload.published
@@ -196,7 +198,8 @@ def update_faq_item(faq_id: int, payload: FAQItemUpdate, db: Session = Depends(g
 )
 def reorder_faq_items(payload: FAQOrderUpdate, db: Session = Depends(get_db)) -> list[FAQItem]:
     current_ids = list(db.scalars(select(FAQItem.id)))
-    requested_ids = payload.faq_ids
+    requested_items = payload.items
+    requested_ids = [item.id for item in requested_items]
 
     if (
         len(requested_ids) != len(current_ids)
@@ -209,8 +212,10 @@ def reorder_faq_items(payload: FAQOrderUpdate, db: Session = Depends(get_db)) ->
         )
 
     faq_map = {faq.id: faq for faq in db.scalars(select(FAQItem).where(FAQItem.id.in_(requested_ids)))}
+    section_map = {item.id: item.section for item in requested_items}
     for sort_order, faq_id in enumerate(requested_ids):
         faq_map[faq_id].sort_order = sort_order
+        faq_map[faq_id].section = section_map[faq_id]
 
     db.commit()
 

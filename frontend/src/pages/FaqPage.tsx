@@ -3,7 +3,16 @@ import ReactMarkdown from "react-markdown";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
-import type { FAQItem, LoadStatus } from "../types";
+import type { FAQItem, FAQSection, LoadStatus } from "../types";
+
+const FAQ_SECTIONS: FAQSection[] = [
+  "Parking and Transportation",
+  "Check-In and Check-Out",
+  "Luggage Storage",
+  "Extending Your Stay",
+  "Condo Policies",
+  "Amenities & Services",
+];
 
 export function FaqPage() {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
@@ -55,14 +64,26 @@ export function FaqPage() {
           </div>
         ) : null}
 
-        {faqs.map((faq) => (
-          <div className="faq-item" key={faq.id}>
-            <h3 className="faq-question">{faq.question}</h3>
-            <div className="faq-answer">
-              <ReactMarkdown>{faq.answer_markdown}</ReactMarkdown>
-            </div>
-          </div>
-        ))}
+        {FAQ_SECTIONS.map((section) => {
+          const sectionFaqs = faqs.filter((faq) => faq.section === section);
+          if (sectionFaqs.length === 0) {
+            return null;
+          }
+
+          return (
+            <section className="faq-section-group" key={section}>
+              <h2 className="faq-section-title">{section}</h2>
+              {sectionFaqs.map((faq) => (
+                <div className="faq-item" key={faq.id}>
+                  <h3 className="faq-question">{faq.question}</h3>
+                  <div className="faq-answer">
+                    <ReactMarkdown>{faq.answer_markdown}</ReactMarkdown>
+                  </div>
+                </div>
+              ))}
+            </section>
+          );
+        })}
       </div>
 
       <div className="contact-section">
