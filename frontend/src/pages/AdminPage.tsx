@@ -15,6 +15,7 @@ import type {
 } from "../types";
 
 const DEFAULT_BLOG_AUTHOR = "Randy Kirsch";
+type FaqDropPlacement = "before" | "after";
 
 function padDatePart(value: number): string {
   return value.toString().padStart(2, "0");
@@ -95,6 +96,7 @@ function reorderFaqsWithinSection(
   sectionId: number,
   sourceId: number,
   targetId: number,
+  placement: FaqDropPlacement,
 ): FAQItem[] | null {
   const sectionFaqs = items
     .filter((item) => item.faq_section_id === sectionId)
@@ -102,13 +104,27 @@ function reorderFaqsWithinSection(
   const sourceIndex = sectionFaqs.findIndex((item) => item.id === sourceId);
   const targetIndex = sectionFaqs.findIndex((item) => item.id === targetId);
 
-  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+  if (sourceIndex === -1 || targetIndex === -1) {
     return null;
   }
 
   const reorderedSectionFaqs = [...sectionFaqs];
   const [movedItem] = reorderedSectionFaqs.splice(sourceIndex, 1);
-  reorderedSectionFaqs.splice(targetIndex, 0, movedItem);
+  let insertIndex = targetIndex;
+
+  if (placement === "after") {
+    insertIndex += 1;
+  }
+
+  if (sourceIndex < insertIndex) {
+    insertIndex -= 1;
+  }
+
+  if (insertIndex === sourceIndex) {
+    return null;
+  }
+
+  reorderedSectionFaqs.splice(insertIndex, 0, movedItem);
 
   const updatedSortOrders = new Map<number, number>();
   reorderedSectionFaqs.forEach((item, index) => {
@@ -143,7 +159,10 @@ export function AdminPage() {
   const [notice, setNotice] = useState("");
   const [draggedFaqId, setDraggedFaqId] = useState<number | null>(null);
   const [draggedFaqSectionId, setDraggedFaqSectionId] = useState<number | null>(null);
-  const [dropTargetFaqId, setDropTargetFaqId] = useState<number | null>(null);
+  const [dropTargetFaq, setDropTargetFaq] = useState<{
+    id: number;
+    placement: FaqDropPlacement;
+  } | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<number | null>(null);
   const [dropTargetSectionId, setDropTargetSectionId] = useState<number | null>(null);
   const [isReorderingFaqs, setIsReorderingFaqs] = useState(false);
@@ -464,7 +483,7 @@ export function AdminPage() {
     event.dataTransfer.setData("text/plain", String(faqId));
     setDraggedFaqId(faqId);
     setDraggedFaqSectionId(sectionId);
-    setDropTargetFaqId(faqId);
+    setDropTargetFaq(null);
   }
 
   function handleFaqDragOver(event: DragEvent<HTMLElement>, faqId: number, sectionId: number): void {
@@ -479,25 +498,45 @@ export function AdminPage() {
 
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
-    setDropTargetFaqId(faqId);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const placement: FaqDropPlacement =
+      event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+
+    setDropTargetFaq((currentTarget) =>
+      currentTarget?.id === faqId && currentTarget.placement === placement
+        ? currentTarget
+        : { id: faqId, placement },
+    );
   }
 
   function handleFaqDragEnd(): void {
     setDraggedFaqId(null);
     setDraggedFaqSectionId(null);
-    setDropTargetFaqId(null);
+    setDropTargetFaq(null);
   }
 
   async function handleFaqDrop(sectionId: number, targetFaqId: number): Promise<void> {
-    if (draggedFaqId === null || draggedFaqSectionId !== sectionId || isReorderingFaqs) {
+    if (
+      draggedFaqId === null ||
+      draggedFaqSectionId !== sectionId ||
+      isReorderingFaqs ||
+      dropTargetFaq === null ||
+      dropTargetFaq.id !== targetFaqId
+    ) {
       return;
     }
 
     const previousFaqs = faqs;
-    const reorderedFaqs = reorderFaqsWithinSection(previousFaqs, sectionId, draggedFaqId, targetFaqId);
+    const reorderedFaqs = reorderFaqsWithinSection(
+      previousFaqs,
+      sectionId,
+      draggedFaqId,
+      targetFaqId,
+      dropTargetFaq.placement,
+    );
     setDraggedFaqId(null);
     setDraggedFaqSectionId(null);
-    setDropTargetFaqId(null);
+    setDropTargetFaq(null);
 
     if (reorderedFaqs === null) {
       return;
@@ -655,8 +694,8 @@ export function AdminPage() {
                       {sectionFaqs.map((faq) => (
                         <article
                           className={`admin-list-item${draggedFaqId === faq.id ? " dragging" : ""}${
-                            dropTargetFaqId === faq.id && draggedFaqId !== faq.id
-                              ? " drop-target"
+                            dropTargetFaq?.id === faq.id && draggedFaqId !== faq.id
+                              ? ` drop-${dropTargetFaq.placement}`
                               : ""
                           }`}
                           key={faq.id}

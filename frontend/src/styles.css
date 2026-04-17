@@ -694,8 +694,13 @@ h3 {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.88) 100%);
   border: 1px solid rgba(21, 66, 115, 0.1);
   border-radius: 1.15rem;
+  position: relative;
   display: grid;
   gap: 0.85rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
 }
 
 .admin-list-item h3 {
@@ -828,6 +833,26 @@ h3 {
 .admin-list-item.drop-target {
   border-color: rgba(21, 66, 115, 0.34);
   box-shadow: 0 0 0 3px rgba(21, 66, 115, 0.12);
+}
+
+.admin-list-item.drop-before::before,
+.admin-list-item.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  height: 4px;
+  border-radius: 999px;
+  background: #2c6fb2;
+  box-shadow: 0 0 0 3px rgba(44, 111, 178, 0.18);
+}
+
+.admin-list-item.drop-before::before {
+  top: -0.55rem;
+}
+
+.admin-list-item.drop-after::after {
+  bottom: -0.55rem;
 }
 
 .admin-subtitle,
