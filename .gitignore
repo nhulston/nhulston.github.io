@@ -1,3 +1,15 @@
+.DS_Store
+.env
+*.db
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+
 # Default ignored files
 /shelf/
 /workspace.xml
