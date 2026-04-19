@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { SITE_NAME, SITE_URL, truncateText, toPlainText, usePageSeo } from "../lib/seo";
 import type { BlogPost, LoadStatus } from "../types";
 
 function formatDate(value: string): string {
@@ -23,6 +24,46 @@ export function BlogIndexPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [error, setError] = useState("");
+
+  const blogJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      name: "ParkCitySkiOut Blog",
+      url: `${SITE_URL}/blog`,
+      description:
+        "Guides and trip notes for choosing where to stay, planning a Park City ski trip, and getting the most from a slopeside condo stay.",
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: `${SITE_URL}/`,
+      },
+      blogPost: posts.map((post) => ({
+        "@type": "BlogPosting",
+        headline: post.title,
+        url: `${SITE_URL}/blog/${post.slug}`,
+        description: truncateText(toPlainText(post.summary || post.body_markdown), 200),
+        datePublished: post.published_at,
+        dateModified: post.updated_at,
+        author: post.author.trim()
+          ? {
+              "@type": "Person",
+              name: post.author.trim(),
+            }
+          : undefined,
+      })),
+    }),
+    [posts],
+  );
+
+  usePageSeo({
+    title: "Park City Blog | Guides, Trip Notes, and Condo Advice",
+    description:
+      "Browse Park City travel guides, ski trip planning advice, and local lodging tips from The Lodge at Mountain Village blog.",
+    path: "/blog",
+    imageAlt: "Park City travel blog from The Lodge at Mountain Village",
+    jsonLd: blogJsonLd,
+  });
 
   useEffect(() => {
     let ignore = false;

@@ -1,4 +1,5 @@
-from datetime import timezone
+from datetime import datetime, timezone
+from xml.sax.saxutils import escape
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from sqlalchemy import func, select
@@ -26,6 +27,20 @@ from app.schemas import (
 from app.utils import slugify_text
 
 app = FastAPI(title=settings.app_name)
+PUBLIC_SITE_URL = "https://parkcityskiout.com"
+
+
+def absolute_site_url(path: str) -> str:
+    base_url = PUBLIC_SITE_URL
+    if not path or path == "/":
+        return f"{base_url}/"
+    return f"{base_url}{path if path.startswith('/') else f'/{path}'}"
+
+
+def format_sitemap_lastmod(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    return value.astimezone(timezone.utc).date().isoformat()
 
 
 def unique_blog_slug(
@@ -88,6 +103,55 @@ def require_faq_section(db: Session, faq_section_id: int) -> FAQSection:
 @app.get("/api/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap(db: Session = Depends(get_db)) -> Response:
+    published_posts = list(
+        db.scalars(
+            select(BlogPost)
+            .where(BlogPost.published.is_(True))
+            .order_by(BlogPost.published_at.desc(), BlogPost.created_at.desc())
+        )
+    )
+    latest_blog_update = db.scalar(
+        select(func.max(BlogPost.updated_at)).where(BlogPost.published.is_(True))
+    )
+    latest_faq_update = db.scalar(select(func.max(FAQItem.updated_at)).where(FAQItem.published.is_(True)))
+    latest_public_update = max(
+        [value for value in [latest_blog_update, latest_faq_update] if value is not None],
+        default=None,
+    )
+
+    urls: list[tuple[str, datetime | None]] = [
+        (absolute_site_url("/"), latest_public_update),
+        (absolute_site_url("/faq"), latest_faq_update),
+        (absolute_site_url("/blog"), latest_blog_update),
+    ]
+    urls.extend(
+        (
+            absolute_site_url(f"/blog/{post.slug}"),
+            post.updated_at or post.published_at,
+        )
+        for post in published_posts
+    )
+
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+
+    for url, lastmod in urls:
+        xml_lines.append("  <url>")
+        xml_lines.append(f"    <loc>{escape(url)}</loc>")
+        formatted_lastmod = format_sitemap_lastmod(lastmod)
+        if formatted_lastmod is not None:
+            xml_lines.append(f"    <lastmod>{formatted_lastmod}</lastmod>")
+        xml_lines.append("  </url>")
+
+    xml_lines.append("</urlset>")
+
+    return Response("\n".join(xml_lines), media_type="application/xml")
 
 
 @app.get("/api/public/faqs", response_model=list[FAQSectionPublicRead])

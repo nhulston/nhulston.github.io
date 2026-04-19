@@ -1,27 +1,29 @@
+import { SITE_NAME, SITE_URL, usePageSeo } from "../lib/seo";
+
 const condos = [
   {
-    alt: "ski in ski out lodge at mountain village park city",
+    alt: "The Taylor ski-in and ski-out four-bedroom condo at The Lodge at Mountain Village in Park City",
     cta: "Sleeps 13, Learn More",
     heading: "The Taylor: Luxury 4 bedroom, 3 bath slopeside",
     href: "https://thelodgeatmountainvillage.bookeddirectly.com/g/park-city/the-taylor-rare-remodeled-park-city-ski-in-out-magnificent-4-br3ba-lux/241e53",
     image: "/images/park-city-condo3.webp",
   },
   {
-    alt: "luxury park city condo, on the mountain slopeside",
+    alt: "The Margot luxury slopeside four-bedroom condo at The Lodge at Mountain Village",
     cta: "Sleeps 13, Learn More",
     heading: "The Margot: Rare 4 bedroom, 3 bath slopeside",
     href: "https://thelodgeatmountainvillage.bookeddirectly.com/g/park-city/just-remodeled-the-margot-rare-ski-in-ski-out-spacious-luxury-and-comfort/fbb760",
     image: "/images/park-city-condo1.webp",
   },
   {
-    alt: "luxury condo at park city, next to ski resort",
+    alt: "The Draper two-bedroom condo with a large private porch beside Park City Mountain",
     cta: "Sleeps 7, Learn More",
     heading: "The Draper: Extraordinary 2 bedroom, 2 bath with Giant private porch, slopeside",
     href: "https://thelodgeatmountainvillage.bookeddirectly.com/g/park-city/just-remodeled-the-draper-rare-ski-in-out-spacious-luxury-huge-porch-views/25af7f",
     image: "/images/park-city-condo2.webp",
   },
   {
-    alt: "lodge at mountain village condo",
+    alt: "The Hamilton two-bedroom slopeside condo with ski mountain views at The Lodge at Mountain Village",
     cta: "Sleeps 8, Learn More",
     heading: "The Hamilton: Exceptional 2 bedroom, 2 bath slopeside with Stunning Ski Mountain Views",
     href: "https://thelodgeatmountainvillage.bookeddirectly.com/g/park-city/the-hamilton-rare-ski-in-out-incredible-views-pool-skating-rink-best-park-city-location-stunning/162c7f",
@@ -42,12 +44,55 @@ const featureBullets = [
   "Amazing alpine views",
 ];
 
+const HOME_TITLE = "Ski-In/Ski-Out Park City Condos | The Lodge at Mountain Village";
+const HOME_DESCRIPTION =
+  "Book ski-in and ski-out Park City condos at The Lodge at Mountain Village with direct lift access, heated pools, underground parking, and walkable dining.";
+const HOME_SOCIAL_ALT =
+  "Snow-covered ski-in and ski-out condos at The Lodge at Mountain Village in Park City";
+
 export function HomePage() {
+  usePageSeo({
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    path: "/",
+    imageAlt: HOME_SOCIAL_ALT,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
+        },
+        {
+          "@type": "LodgingBusiness",
+          name: "The Lodge at Mountain Village",
+          url: `${SITE_URL}/`,
+          description: HOME_DESCRIPTION,
+          image: [`${SITE_URL}/images/park-city-ski-resort.webp`],
+          telephone: "(480) 945-1952",
+          email: "Lodgeatmountainvillage@gmail.com",
+          sameAs: [
+            "https://www.facebook.com/The-Lodge-at-Park-City-Mountain-Resort-105341847843419/",
+          ],
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "1415 Lowell Ave",
+            addressLocality: "Park City",
+            addressRegion: "UT",
+            postalCode: "84060",
+            addressCountry: "US",
+          },
+        },
+      ],
+    },
+  });
+
   return (
     <>
       <div id="header-div">
         <img
-          alt="ski in ski out park city. the lodge at park city mountain resort"
+          alt={HOME_SOCIAL_ALT}
           fetchPriority="high"
           src="/images/park-city-ski-resort.webp"
         />
@@ -99,7 +144,10 @@ export function HomePage() {
           </div>
         </div>
         <div className="column" id="column_image">
-          <img alt="park city map mountain resort lodge ski" src="/images/park-city-map.webp" />
+          <img
+            alt="Map showing The Lodge at Mountain Village next to Park City Mountain Resort"
+            src="/images/park-city-map.webp"
+          />
         </div>
       </div>
 
@@ -137,7 +185,11 @@ export function HomePage() {
         rel="noreferrer"
         target="_blank"
       >
-        <img alt="park city mountain resort facebook" id="facebook" src="/images/facebook.png" />
+        <img
+          alt="Facebook page for The Lodge at Park City Mountain Resort"
+          id="facebook"
+          src="/images/facebook.png"
+        />
       </a>
     </>
   );

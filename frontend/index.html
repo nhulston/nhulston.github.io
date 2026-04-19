@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta content="index, follow, max-image-preview:large" name="robots" />
     <link crossorigin href="https://www.googletagmanager.com" rel="preconnect" />
     <link crossorigin href="https://www.google-analytics.com" rel="preconnect" />
     <link
@@ -12,6 +13,13 @@
     />
     <script>
       const isAdminPath = window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin/");
+
+      if (isAdminPath) {
+        const robotsTag = document.querySelector('meta[name="robots"]');
+        if (robotsTag) {
+          robotsTag.setAttribute("content", "noindex, nofollow, noarchive");
+        }
+      }
 
       if (!isAdminPath) {
         window.dataLayer = window.dataLayer || [];
@@ -51,10 +59,16 @@
       content="Experience a true ski-in/ski-out vacation at The Lodge at Park City Mountain Resort. Book your stay in our beautiful condos, offering unbeatable access to lifts, shops, and amenities."
       property="og:description"
     />
+    <meta content="website" property="og:type" />
+    <meta content="https://parkcityskiout.com/" property="og:url" />
+    <meta
+      content="https://parkcityskiout.com/images/park-city-ski-resort.webp"
+      property="og:image"
+    />
     <meta content="Park City Mountain Resort" name="author" />
     <meta content="Ski-in Ski-out Park City Condo Ski in ski out" property="og:title" />
     <meta
-      content="The Lodge at Park City Mountain Resort Ski in Ski Out Park City"
+      content="summary_large_image"
       name="twitter:card"
     />
     <meta
@@ -69,7 +83,12 @@
       content="Ski in Ski Out Park City The Lodge at Park City Mountain Resort"
       name="twitter:image:alt"
     />
+    <meta
+      content="https://parkcityskiout.com/images/park-city-ski-resort.webp"
+      name="twitter:image"
+    />
     <meta content="#154273" name="theme-color" />
+    <link href="https://parkcityskiout.com/" rel="canonical" />
     <link rel="icon" type="image/png" href="/images/favicon.png" />
   </head>
   <body>

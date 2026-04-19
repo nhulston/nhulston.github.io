@@ -1,14 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { truncateText, toPlainText, usePageSeo } from "../lib/seo";
 import type { FAQPublicSection, LoadStatus } from "../types";
 
 export function FaqPage() {
   const [faqSections, setFaqSections] = useState<FAQPublicSection[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [error, setError] = useState("");
+
+  const faqJsonLd = useMemo(() => {
+    if (faqSections.length === 0) {
+      return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [],
+      };
+    }
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqSections.flatMap((section) =>
+        section.items.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: truncateText(toPlainText(faq.answer_markdown), 5000),
+          },
+        })),
+      ),
+    };
+  }, [faqSections]);
+
+  usePageSeo({
+    title: "Park City Ski Condo FAQ | Parking, Check-In, Amenities",
+    description:
+      "Read Park City condo FAQs covering parking, check-in, luggage storage, condo policies, amenities, and local stay details at The Lodge at Mountain Village.",
+    path: "/faq",
+    imageAlt: "Frequently asked questions about staying at The Lodge at Mountain Village in Park City",
+    jsonLd: faqJsonLd,
+  });
 
   useEffect(() => {
     let ignore = false;

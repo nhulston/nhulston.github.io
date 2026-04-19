@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { usePageSeo } from "../lib/seo";
 import type {
   BlogPost,
   BlogPostFormData,
@@ -167,6 +168,19 @@ export function AdminPage() {
   const [dropTargetSectionId, setDropTargetSectionId] = useState<number | null>(null);
   const [isReorderingFaqs, setIsReorderingFaqs] = useState(false);
   const [isReorderingSections, setIsReorderingSections] = useState(false);
+
+  usePageSeo({
+    title: "Admin Dashboard | ParkCitySkiOut",
+    description: "Private dashboard for managing ParkCitySkiOut FAQs, sections, and blog posts.",
+    path: "/admin",
+    noindex: true,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: "Admin Dashboard",
+      url: "https://parkcityskiout.com/admin",
+    },
+  });
 
   async function loadAll(): Promise<void> {
     setStatus("loading");

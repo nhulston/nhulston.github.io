@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { SITE_NAME, SITE_URL, truncateText, toPlainText, usePageSeo } from "../lib/seo";
 import type { BlogPost, LoadStatus } from "../types";
 
 function formatDate(value: string): string {
@@ -25,6 +26,73 @@ export function BlogPostPage() {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [error, setError] = useState("");
+
+  const description = post
+    ? truncateText(toPlainText(post.summary || post.body_markdown), 180)
+    : "Read Park City travel advice and lodging insights from The Lodge at Mountain Village.";
+
+  const postJsonLd = useMemo(() => {
+    if (!post) {
+      return {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: "Park City Blog",
+        url: `${SITE_URL}/blog${slug ? `/${slug}` : ""}`,
+      };
+    }
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description,
+      url: `${SITE_URL}/blog/${post.slug}`,
+      datePublished: post.published_at,
+      dateModified: post.updated_at,
+      articleSection: "Park City Travel",
+      author: post.author.trim()
+        ? {
+            "@type": "Person",
+            name: post.author.trim(),
+          }
+        : undefined,
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: `${SITE_URL}/`,
+      },
+      mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+    };
+  }, [description, post, slug]);
+
+  usePageSeo({
+    title: post ? `${post.title} | ParkCitySkiOut Blog` : "Park City Blog Post | ParkCitySkiOut",
+    description,
+    path: post ? `/blog/${post.slug}` : slug ? `/blog/${slug}` : "/blog",
+    ogType: "article",
+    imageAlt: post ? post.title : "Park City blog post from The Lodge at Mountain Village",
+    jsonLd: postJsonLd,
+    extraMeta: post
+      ? [
+          {
+            property: "article:published_time",
+            content: post.published_at,
+          },
+          {
+            property: "article:modified_time",
+            content: post.updated_at,
+          },
+          ...(post.author.trim()
+            ? [
+                {
+                  property: "article:author",
+                  content: post.author.trim(),
+                },
+              ]
+            : []),
+        ]
+      : [],
+  });
 
   useEffect(() => {
     if (!slug) {
